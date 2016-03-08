@@ -1,0 +1,10 @@
+package: github.com/monder/kaylee
+import:
+- package: github.com/coreos/fleet
+  version: ^0.11.5
+  subpackages:
+  - Godeps/_workspace/src/github.com/coreos/etcd/client
+  - Godeps/_workspace/src/golang.org/x/net/context
+  - client
+  - registry
+  - schema

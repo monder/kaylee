@@ -1,0 +1,25 @@
+hash: 641130909bfcbe4082330c68501796619ce767b5033e7fa69c3c5ec128423ed9
+updated: 2016-03-08T21:58:29.180838249+02:00
+imports:
+- name: github.com/coreos/fleet
+  version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
+  subpackages:
+  - Godeps/_workspace/src/github.com/coreos/etcd/client
+  - Godeps/_workspace/src/golang.org/x/net/context
+  - client
+  - registry
+  - schema
+  - Godeps/_workspace/src/github.com/coreos/etcd/pkg/types
+  - Godeps/_workspace/src/google.golang.org/api/googleapi
+  - job
+  - machine
+  - Godeps/_workspace/src/github.com/coreos/go-semver/semver
+  - log
+  - pkg
+  - pkg/lease
+  - unit
+  - Godeps/_workspace/src/github.com/coreos/go-systemd/unit
+  - Godeps/_workspace/src/google.golang.org/api/googleapi/internal/uritemplates
+  - Godeps/_workspace/src/github.com/docker/libcontainer/netlink
+  - Godeps/_workspace/src/github.com/jonboulle/clockwork
+devImports: []
