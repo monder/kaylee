@@ -1,5 +1,5 @@
-hash: 641130909bfcbe4082330c68501796619ce767b5033e7fa69c3c5ec128423ed9
-updated: 2016-03-08T21:58:29.180838249+02:00
+hash: 4059641ee5473bedc209154b9219fcda6e8fa1ff201bbf6e1282bb7d033372dd
+updated: 2016-03-09T09:23:01.607425683+02:00
 imports:
 - name: github.com/coreos/fleet
   version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
@@ -22,4 +22,18 @@ imports:
   - Godeps/_workspace/src/google.golang.org/api/googleapi/internal/uritemplates
   - Godeps/_workspace/src/github.com/docker/libcontainer/netlink
   - Godeps/_workspace/src/github.com/jonboulle/clockwork
+- name: github.com/coreos/go-etcd
+  version: 003851be7bb0694fe3cc457a49529a19388ee7cf
+  subpackages:
+  - etcd
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/niniwzw/etcdlock
+  version: 7ce3dd2d4889443e53d22e14571b12111df4f92e
+- name: github.com/satori/go.uuid
+  version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
+- name: github.com/ugorji/go
+  version: 187fa0f8af224437e08ecb3f208c4d1a94859a61
+  subpackages:
+  - codec
 devImports: []

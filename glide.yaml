@@ -8,3 +8,5 @@ import:
   - client
   - registry
   - schema
+- package: github.com/niniwzw/etcdlock
+- package: github.com/satori/go.uuid
