@@ -18,7 +18,7 @@ type Fleet struct {
 	Prefix string
 }
 
-func (fleet Fleet) ScheduleUnit(unit Unit) {
+func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 
 	// Make a list of units we should replace
 	var unitsToRemove []string
@@ -65,7 +65,7 @@ func (fleet Fleet) ScheduleUnit(unit Unit) {
 	}
 }
 
-func (fleet Fleet) waitForUnitStart(name string) {
+func (fleet *Fleet) waitForUnitStart(name string) {
 	log.Println("Waiting for unit to start:", name)
 	prevState := "undefined"
 	for i := 0; i < 60; i++ {
@@ -100,7 +100,7 @@ func (fleet Fleet) waitForUnitStart(name string) {
 	log.Println("Unable to schedule unit:", name)
 }
 
-func makeFleetUnit(name string, spec Unit, conflictString string, index int) *fleetSchema.Unit {
+func makeFleetUnit(name string, spec *Unit, conflictString string, index int) *fleetSchema.Unit {
 	dockerName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
 	dockerName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(dockerName, "")
 
@@ -110,6 +110,9 @@ func makeFleetUnit(name string, spec Unit, conflictString string, index int) *fl
 	}
 	for _, label := range spec.Spec.Labels {
 		dockerArgs = append(dockerArgs, fmt.Sprintf("-l %s=%s", label.Name, label.Value))
+	}
+	for _, arg := range spec.Spec.DockerArgs {
+		dockerArgs = append(dockerArgs, arg)
 	}
 
 	var options []*fleetSchema.UnitOption
@@ -135,7 +138,7 @@ func makeFleetUnit(name string, spec Unit, conflictString string, index int) *fl
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/docker run --dns=${COREOS_PRIVATE_IPV4} %s --name %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image),
+		Value:   fmt.Sprintf("/usr/bin/docker run %s --name %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{

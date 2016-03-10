@@ -1,5 +1,5 @@
-hash: 4059641ee5473bedc209154b9219fcda6e8fa1ff201bbf6e1282bb7d033372dd
-updated: 2016-03-09T09:23:01.607425683+02:00
+hash: 7a1e50b35c0562612e91088aa8af98e5ecd23d53faeed36b94d943b38dba0890
+updated: 2016-03-09T16:04:31.875736888+02:00
 imports:
 - name: github.com/coreos/fleet
   version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
@@ -26,6 +26,8 @@ imports:
   version: 003851be7bb0694fe3cc457a49529a19388ee7cf
   subpackages:
   - etcd
+- name: github.com/fsouza/go-dockerclient
+  version: 9b6c9720043b74304a6dd07a2a901d16e7bf3d3d
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/niniwzw/etcdlock

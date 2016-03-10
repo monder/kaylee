@@ -10,3 +10,4 @@ import:
   - schema
 - package: github.com/niniwzw/etcdlock
 - package: github.com/satori/go.uuid
+- package: github.com/fsouza/go-dockerclient
