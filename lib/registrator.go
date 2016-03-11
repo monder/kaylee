@@ -6,11 +6,12 @@ import (
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/fsouza/go-dockerclient"
 	"os"
+	"time"
 )
 
 type Registrator struct {
 	EtcdEndpoints []string
-	EtdcKey       string
+	EtcdKey       string
 	ID            string
 }
 
@@ -27,6 +28,7 @@ func (r *registratorInternal) addContainer(ID string) {
 	if name == "" {
 		name = "unknown"
 	}
+	fmt.Printf("add %s/%s/%s/%s\n", r.etcdKey, r.id, name, c.Name)
 	r.etcd.Set(
 		context.Background(),
 		fmt.Sprintf("%s/%s/%s/%s", r.etcdKey, r.id, name, c.Name),
@@ -41,6 +43,7 @@ func (r *registratorInternal) removeContainer(ID string) {
 	if name == "" {
 		name = "unknown"
 	}
+	fmt.Printf("delete %s/%s/%s/%s\n", r.etcdKey, r.id, name, c.Name)
 	r.etcd.Delete(
 		context.Background(),
 		fmt.Sprintf("%s/%s/%s/%s", r.etcdKey, r.id, name, c.Name),
@@ -53,6 +56,68 @@ func (r *registratorInternal) removeContainer(ID string) {
 	)
 }
 
+func (r *registratorInternal) resyncAll() {
+	fmt.Println("Resync ", fmt.Sprintf("%s/%s", r.etcdKey, r.id))
+	// TODO Make a proper diff
+	r.etcd.Delete(context.Background(), fmt.Sprintf("%s/%s", r.etcdKey, r.id), &etcd.DeleteOptions{Recursive: true})
+
+	containers, err := r.dockerClient.ListContainers(docker.ListContainersOptions{})
+	Assert(err)
+	for _, c := range containers {
+		r.addContainer(c.ID)
+	}
+	if len(containers) == 0 {
+		r.etcd.Set(context.Background(), fmt.Sprintf("%s/%s", r.etcdKey, r.id), "", &etcd.SetOptions{Dir: true})
+	}
+}
+
+func (r *registratorInternal) watchForReload() {
+	watcher := r.etcd.Watcher(
+		fmt.Sprintf("%s/%s", r.etcdKey, r.id),
+		&etcd.WatcherOptions{AfterIndex: 0},
+	)
+	for {
+		change, err := watcher.Next(context.Background())
+		Assert(err)
+		if change.Node.Expiration != nil {
+			fmt.Println("Removing expiration for ", fmt.Sprintf("%s/%s", r.etcdKey, r.id))
+			r.etcd.Set(context.Background(), fmt.Sprintf("%s/%s", r.etcdKey, r.id), "",
+				&etcd.SetOptions{
+					Dir:       true,
+					PrevExist: etcd.PrevExist,
+				},
+			)
+			r.resyncAll()
+		} else if change.Action == "delete" {
+			r.resyncAll()
+		}
+	}
+
+}
+
+func (r *Registrator) ReloadAllInstances() {
+	c, err := etcd.New(etcd.Config{Endpoints: r.EtcdEndpoints})
+	Assert(err)
+	etcdAPI := etcd.NewKeysAPI(c)
+
+	fmt.Println("removing everything")
+	resp, err := etcdAPI.Get(context.Background(), fmt.Sprintf("%s/", r.EtcdKey), &etcd.GetOptions{})
+	Assert(err)
+
+	for i, n := range resp.Node.Nodes {
+
+		a, b := etcdAPI.Set(context.Background(), n.Key, "",
+			&etcd.SetOptions{
+				Dir:       true,
+				TTL:       time.Duration((i+1)*5) * time.Second,
+				PrevExist: etcd.PrevExist,
+			},
+		)
+		fmt.Println(a)
+		fmt.Println(b)
+	}
+}
+
 func (r *Registrator) RunDockerLoop() {
 	dockerHost := os.Getenv("DOCKER_HOST")
 	if dockerHost == "" {
@@ -60,7 +125,7 @@ func (r *Registrator) RunDockerLoop() {
 	}
 	dockerClient, err := docker.NewClientFromEnv()
 	Assert(err)
-	_, err = dockerClient.Version()
+	err = dockerClient.Ping()
 	Assert(err)
 	dockerEvents := make(chan *docker.APIEvents)
 	err = dockerClient.AddEventListener(dockerEvents)
@@ -68,13 +133,15 @@ func (r *Registrator) RunDockerLoop() {
 	c, err := etcd.New(etcd.Config{Endpoints: r.EtcdEndpoints})
 	Assert(err)
 	etcdAPI := etcd.NewKeysAPI(c)
-
 	ri := &registratorInternal{
 		dockerClient: dockerClient,
 		etcd:         etcdAPI,
-		etcdKey:      r.EtdcKey,
+		etcdKey:      r.EtcdKey,
 		id:           r.ID,
 	}
+	go ri.watchForReload()
+	ri.resyncAll()
+
 	for {
 		select {
 		case event := <-dockerEvents:

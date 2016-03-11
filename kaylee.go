@@ -81,7 +81,7 @@ func cleanup() {
 			Endpoints: strings.Split(opts.etcdEndpoints, ","),
 		})
 		etcdAPI := etcd.NewKeysAPI(c)
-		fmt.Println("deleting master")
+		fmt.Println("Deleting master")
 		etcdAPI.Delete(context.Background(), fmt.Sprintf("%s/master", opts.etcdPrefix), &etcd.DeleteOptions{})
 	}
 
@@ -108,20 +108,21 @@ func main() {
 	fleet, err := getFleet()
 	lib.Assert(err)
 
+	registrator := &lib.Registrator{
+		EtcdEndpoints: strings.Split(opts.etcdEndpoints, ","),
+		EtcdKey:       fmt.Sprintf("%s/instances", opts.etcdPrefix),
+		ID:            id,
+	}
+
 	go cluster.MonitorMasterState(func(isMaster bool) {
-		fmt.Println("master: ", isMaster)
+		fmt.Println("Master: ", isMaster)
 		state.isMaster = isMaster
 		if isMaster {
+			registrator.ReloadAllInstances()
 			units.ReloadAll(fleet.ScheduleUnit)
 			go units.WatchForChanges(&state.isMaster, fleet.ScheduleUnit)
 		}
 	})
-
-	registrator := &lib.Registrator{
-		EtcdEndpoints: strings.Split(opts.etcdEndpoints, ","),
-		EtdcKey:       fmt.Sprintf("%s/instances", opts.etcdPrefix),
-		ID:            id,
-	}
 
 	registrator.RunDockerLoop()
 }
