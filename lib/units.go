@@ -11,18 +11,18 @@ type Unit struct {
 	Name string `json:"name"`
 	Spec struct {
 		Replicas           int    `json:"replicas"`
-		MaxReplicasPerHost int    `json:"maxReplicasPerHost"`
+		MaxReplicasPerHost int    `json:"maxReplicasPerHost" yaml:"maxReplicasPerHost"`
 		Image              string `json:"image"`
 		Env                []struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
-		} `json:"env"`
+		} `json:"env,omitempty"`
 		Labels []struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
-		} `json:"labels"`
-		Machine    []string `json:"machine"`
-		DockerArgs []string `json:"dockerArgs"`
+		} `json:"labels,omitempty"`
+		Machine    []string `json:"machine,omitempty"`
+		DockerArgs []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
 	} `json:"spec"`
 }
 

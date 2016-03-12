@@ -11,3 +11,4 @@ import:
 - package: github.com/niniwzw/etcdlock
 - package: github.com/satori/go.uuid
 - package: github.com/fsouza/go-dockerclient
+- package: gopkg.in/yaml.v2

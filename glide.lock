@@ -1,5 +1,5 @@
-hash: 7a1e50b35c0562612e91088aa8af98e5ecd23d53faeed36b94d943b38dba0890
-updated: 2016-03-09T16:04:31.875736888+02:00
+hash: 21f6af3b6f0564ae826cdb2e1b0142929c7d53f8915a8fc5fbd09c3ca50ce599
+updated: 2016-03-11T15:48:01.109419427+02:00
 imports:
 - name: github.com/coreos/fleet
   version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
@@ -27,7 +27,25 @@ imports:
   subpackages:
   - etcd
 - name: github.com/fsouza/go-dockerclient
-  version: 9b6c9720043b74304a6dd07a2a901d16e7bf3d3d
+  version: 73f08fbacc09c6fd1b7bc179193e58b14d7619cc
+  subpackages:
+  - external/github.com/docker/docker/opts
+  - external/github.com/docker/docker/pkg/archive
+  - external/github.com/docker/docker/pkg/fileutils
+  - external/github.com/docker/docker/pkg/homedir
+  - external/github.com/docker/docker/pkg/stdcopy
+  - external/github.com/hashicorp/go-cleanhttp
+  - external/github.com/Sirupsen/logrus
+  - external/github.com/docker/docker/pkg/idtools
+  - external/github.com/docker/docker/pkg/ioutils
+  - external/github.com/docker/docker/pkg/pools
+  - external/github.com/docker/docker/pkg/promise
+  - external/github.com/docker/docker/pkg/system
+  - external/github.com/docker/docker/pkg/longpath
+  - external/github.com/opencontainers/runc/libcontainer/user
+  - external/golang.org/x/sys/unix
+  - external/golang.org/x/net/context
+  - external/github.com/docker/go-units
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/niniwzw/etcdlock
@@ -38,4 +56,6 @@ imports:
   version: 187fa0f8af224437e08ecb3f208c4d1a94859a61
   subpackages:
   - codec
+- name: gopkg.in/yaml.v2
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
 devImports: []

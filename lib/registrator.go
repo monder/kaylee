@@ -87,12 +87,15 @@ func (r *registratorInternal) watchForReload() {
 					PrevExist: etcd.PrevExist,
 				},
 			)
+			fmt.Println("Node expiration changed")
 			r.resyncAll()
-		} else if change.Action == "delete" {
+		} else if change.Node == nil && change.Action == "delete" {
+			fmt.Println("%#v", change)
+			fmt.Println("My id: ", fmt.Sprintf("%s/%s", r.etcdKey, r.id))
+			fmt.Println("Node deleted: ", change.PrevNode.Key)
 			r.resyncAll()
 		}
 	}
-
 }
 
 func (r *Registrator) ReloadAllInstances() {
