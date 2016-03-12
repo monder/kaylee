@@ -22,6 +22,7 @@ type Unit struct {
 			Value string `json:"value"`
 		} `json:"labels,omitempty"`
 		Machine    []string `json:"machine,omitempty"`
+		MachineID  string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
 		DockerArgs []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
 	} `json:"spec"`
 }

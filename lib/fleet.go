@@ -19,7 +19,46 @@ type Fleet struct {
 }
 
 func (fleet *Fleet) ScheduleUnit(unit *Unit) {
+	if unit.Spec.Replicas > 0 {
+		fleet.scheduleReplicaUnit(unit)
+	} else {
+		fleet.scheduleStandaloneUnit(unit)
+	}
+}
 
+func (fleet *Fleet) scheduleStandaloneUnit(unit *Unit) {
+	var unitsToRemove []string
+	existingUnits, _ := fleet.API.Units()
+	for _, u := range existingUnits {
+		if strings.HasPrefix(u.Name, fmt.Sprintf("%s:%s:", fleet.Prefix, unit.Name)) {
+			unitsToRemove = append(unitsToRemove, u.Name)
+		}
+	}
+
+	randBytes := make([]byte, 3)
+	rand.Read(randBytes) //TODO err
+
+	specData, _ := json.Marshal(unit)
+	specHash := sha1.Sum(specData)
+	unitName := fmt.Sprintf("%s:%s:%x:%x.service", fleet.Prefix, unit.Name, specHash[:3], randBytes)
+	conflictString := fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name)
+	fleetUnit := makeFleetUnit(unitName, unit, conflictString)
+	err := fleet.API.CreateUnit(fleetUnit)
+	if err != nil {
+		log.Println("Unable to create unit:", err)
+	}
+
+	fleet.waitForUnitStart(unitName)
+	for _, unit := range unitsToRemove {
+		log.Println("Deleting unit:", unit)
+		fleet.API.DestroyUnit(unit)
+	}
+}
+
+func (fleet *Fleet) scheduleReplicaUnit(unit *Unit) {
+	if unit.Spec.MaxReplicasPerHost == 0 {
+		unit.Spec.MaxReplicasPerHost = unit.Spec.Replicas
+	}
 	// Make a list of units we should replace
 	var unitsToRemove []string
 	existingUnits, _ := fleet.API.Units()
@@ -45,7 +84,7 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)], i)
 		conflictString := fmt.Sprintf("%s:%s:%x:%s:*.service",
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)])
-		fleetUnit := makeFleetUnit(unitName, unit, conflictString, i)
+		fleetUnit := makeFleetUnit(unitName, unit, conflictString)
 		err := fleet.API.CreateUnit(fleetUnit)
 		if err != nil {
 			log.Println("Unable to create unit:", err)
@@ -100,11 +139,14 @@ func (fleet *Fleet) waitForUnitStart(name string) {
 	log.Println("Unable to schedule unit:", name)
 }
 
-func makeFleetUnit(name string, spec *Unit, conflictString string, index int) *fleetSchema.Unit {
+func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.Unit {
 	dockerName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
 	dockerName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(dockerName, "")
 
 	var dockerArgs []string
+
+	dockerArgs = append(dockerArgs, fmt.Sprintf("-l s7r.name=%s", spec.Name))
+
 	for _, env := range spec.Spec.Env {
 		dockerArgs = append(dockerArgs, fmt.Sprintf("-e %s=%s", env.Name, env.Value))
 	}
@@ -154,6 +196,11 @@ func makeFleetUnit(name string, spec *Unit, conflictString string, index int) *f
 	for _, machine := range spec.Spec.Machine {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "X-Fleet", Name: "MachineMetadata", Value: machine,
+		})
+	}
+	if spec.Spec.MachineID != "" {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "X-Fleet", Name: "MachineID", Value: spec.Spec.MachineID,
 		})
 	}
 
