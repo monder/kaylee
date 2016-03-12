@@ -107,17 +107,15 @@ func (r *Registrator) ReloadAllInstances() {
 	resp, err := etcdAPI.Get(context.Background(), fmt.Sprintf("%s/", r.EtcdKey), &etcd.GetOptions{})
 	Assert(err)
 
-	for i, n := range resp.Node.Nodes {
-
-		a, b := etcdAPI.Set(context.Background(), n.Key, "",
+	for _, n := range resp.Node.Nodes {
+		etcdAPI.Set(context.Background(), n.Key, "",
 			&etcd.SetOptions{
 				Dir:       true,
-				TTL:       time.Duration((i+1)*5) * time.Second,
+				TTL:       5 * time.Second,
 				PrevExist: etcd.PrevExist,
 			},
 		)
-		fmt.Println(a)
-		fmt.Println(b)
+		time.Sleep(10 * time.Second)
 	}
 }
 

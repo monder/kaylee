@@ -118,7 +118,7 @@ func main() {
 		fmt.Println("Master: ", isMaster)
 		state.isMaster = isMaster
 		if isMaster {
-			registrator.ReloadAllInstances()
+			go registrator.ReloadAllInstances()
 			units.ReloadAll(fleet.ScheduleUnit)
 			go units.WatchForChanges(&state.isMaster, fleet.ScheduleUnit)
 		}

@@ -19,43 +19,11 @@ type Fleet struct {
 }
 
 func (fleet *Fleet) ScheduleUnit(unit *Unit) {
-	if unit.Spec.Replicas > 0 {
-		fleet.scheduleReplicaUnit(unit)
-	} else {
-		fleet.scheduleStandaloneUnit(unit)
+	replicaUnit := true
+	if unit.Spec.Replicas == 0 {
+		unit.Spec.Replicas = 1
+		replicaUnit = false
 	}
-}
-
-func (fleet *Fleet) scheduleStandaloneUnit(unit *Unit) {
-	var unitsToRemove []string
-	existingUnits, _ := fleet.API.Units()
-	for _, u := range existingUnits {
-		if strings.HasPrefix(u.Name, fmt.Sprintf("%s:%s:", fleet.Prefix, unit.Name)) {
-			unitsToRemove = append(unitsToRemove, u.Name)
-		}
-	}
-
-	randBytes := make([]byte, 3)
-	rand.Read(randBytes) //TODO err
-
-	specData, _ := json.Marshal(unit)
-	specHash := sha1.Sum(specData)
-	unitName := fmt.Sprintf("%s:%s:%x:%x.service", fleet.Prefix, unit.Name, specHash[:3], randBytes)
-	conflictString := fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name)
-	fleetUnit := makeFleetUnit(unitName, unit, conflictString)
-	err := fleet.API.CreateUnit(fleetUnit)
-	if err != nil {
-		log.Println("Unable to create unit:", err)
-	}
-
-	fleet.waitForUnitStart(unitName)
-	for _, unit := range unitsToRemove {
-		log.Println("Deleting unit:", unit)
-		fleet.API.DestroyUnit(unit)
-	}
-}
-
-func (fleet *Fleet) scheduleReplicaUnit(unit *Unit) {
 	if unit.Spec.MaxReplicasPerHost == 0 {
 		unit.Spec.MaxReplicasPerHost = unit.Spec.Replicas
 	}
@@ -84,6 +52,9 @@ func (fleet *Fleet) scheduleReplicaUnit(unit *Unit) {
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)], i)
 		conflictString := fmt.Sprintf("%s:%s:%x:%s:*.service",
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)])
+		if !replicaUnit {
+			conflictString = fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name)
+		}
 		fleetUnit := makeFleetUnit(unitName, unit, conflictString)
 		err := fleet.API.CreateUnit(fleetUnit)
 		if err != nil {
