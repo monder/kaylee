@@ -2,9 +2,9 @@ package lib
 
 import (
 	"encoding/json"
+	"fmt"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
-	"log"
 )
 
 type Unit struct {
@@ -58,7 +58,7 @@ func (u *Units) ReloadAll(cb func(*Unit)) {
 		var unit Unit
 		err = json.Unmarshal([]byte(node.Value), &unit)
 		if err != nil {
-			log.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)
+			fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)
 		}
 		cb(&unit)
 	}
@@ -77,14 +77,14 @@ func (u *Units) WatchForChanges(isMaster *bool, cb func(*Unit)) {
 		change, err := watcher.Next(context.Background())
 		Assert(err)
 		if *isMaster == false {
-			log.Println("Not watching anymore")
+			fmt.Println("Not watching anymore")
 			return
 		}
 		if change.Node != nil && (change.PrevNode == nil || change.Node.Value != change.PrevNode.Value) {
 			var unit Unit
 			err = json.Unmarshal([]byte(change.Node.Value), &unit)
 			if err != nil {
-				log.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
+				fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
 			}
 			cb(&unit)
 		}

@@ -12,3 +12,4 @@ import:
 - package: github.com/satori/go.uuid
 - package: github.com/fsouza/go-dockerclient
 - package: gopkg.in/yaml.v2
+- package: github.com/codegangsta/cli

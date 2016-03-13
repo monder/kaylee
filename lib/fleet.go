@@ -7,7 +7,6 @@ import (
 	"fmt"
 	fleetClient "github.com/coreos/fleet/client"
 	fleetSchema "github.com/coreos/fleet/schema"
-	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -58,31 +57,31 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 		fleetUnit := makeFleetUnit(unitName, unit, conflictString)
 		err := fleet.API.CreateUnit(fleetUnit)
 		if err != nil {
-			log.Println("Unable to create unit:", err)
+			fmt.Println("Unable to create unit:", err)
 		}
 		fleet.waitForUnitStart(unitName)
 		if len(unitsToRemove) > 0 {
-			log.Println("Deleting unit:", unitsToRemove[0])
+			fmt.Println("Deleting unit:", unitsToRemove[0])
 			fleet.API.DestroyUnit(unitsToRemove[0])
 			unitsToRemove = unitsToRemove[1:]
 		} else {
-			log.Println("No more units to remove")
+			fmt.Println("No more units to remove")
 		}
 	}
 	for _, unit := range unitsToRemove {
-		log.Println("Deleting unit:", unit)
+		fmt.Println("Deleting unit:", unit)
 		fleet.API.DestroyUnit(unit)
 	}
 }
 
 func (fleet *Fleet) waitForUnitStart(name string) {
-	log.Println("Waiting for unit to start:", name)
+	fmt.Println("Waiting for unit to start:", name)
 	prevState := "undefined"
 	for i := 0; i < 60; i++ {
 		currentState := "unknown"
 		states, err := fleet.API.UnitStates()
 		if err != nil {
-			log.Println("Unable to retrieve unit state")
+			fmt.Println("Unable to retrieve unit state")
 			continue
 		}
 		for _, state := range states {
@@ -102,12 +101,12 @@ func (fleet *Fleet) waitForUnitStart(name string) {
 		}
 		if currentState == "running" {
 			fmt.Print("\n")
-			log.Println("Unit started:", name)
+			fmt.Println("Unit started:", name)
 			return
 		}
 		time.Sleep(time.Second)
 	}
-	log.Println("Unable to schedule unit:", name)
+	fmt.Println("Unable to schedule unit:", name)
 }
 
 func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.Unit {
@@ -151,7 +150,7 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/docker run %s --name %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image),
+		Value:   fmt.Sprintf("/usr/bin/docker run --rm %s --name %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{

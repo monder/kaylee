@@ -1,6 +1,8 @@
-hash: 21f6af3b6f0564ae826cdb2e1b0142929c7d53f8915a8fc5fbd09c3ca50ce599
-updated: 2016-03-11T15:48:01.109419427+02:00
+hash: 022f585d4668df9f4b3a8417ddc3ffc4f50a811d4e2ae77aa6ebda9723c18a9a
+updated: 2016-03-13T12:16:19.05196017+02:00
 imports:
+- name: github.com/codegangsta/cli
+  version: aca5b047ed14d17224157c3434ea93bf6cdaadee
 - name: github.com/coreos/fleet
   version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
   subpackages:
@@ -27,7 +29,7 @@ imports:
   subpackages:
   - etcd
 - name: github.com/fsouza/go-dockerclient
-  version: 73f08fbacc09c6fd1b7bc179193e58b14d7619cc
+  version: cec3f19b1d800de38185ec0e08446156254ec463
   subpackages:
   - external/github.com/docker/docker/opts
   - external/github.com/docker/docker/pkg/archive
