@@ -134,9 +134,11 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Unit", Name: "After", Value: "flanneld.service",
 	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "EnvironmentFile", Value: "/etc/environment",
-	})
+	for _, env := range spec.Spec.EnvFiles {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "Service", Name: "EnvironmentFile", Value: env,
+		})
+	}
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Spec.Image),
 	})
@@ -150,7 +152,7 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/docker run --rm %s --name %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image),
+		Value:   fmt.Sprintf("/usr/bin/docker run %s --name %s %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image, spec.Spec.Cmd),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{
@@ -171,6 +173,11 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 	if spec.Spec.MachineID != "" {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "X-Fleet", Name: "MachineID", Value: spec.Spec.MachineID,
+		})
+	}
+	if spec.Spec.Global {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "X-Fleet", Name: "Global", Value: "true",
 		})
 	}
 

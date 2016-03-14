@@ -10,9 +10,11 @@ import (
 type Unit struct {
 	Name string `json:"name"`
 	Spec struct {
-		Replicas           int    `json:"replicas"`
-		MaxReplicasPerHost int    `json:"maxReplicasPerHost" yaml:"maxReplicasPerHost"`
-		Image              string `json:"image"`
+		Replicas           int      `json:"replicas"`
+		MaxReplicasPerHost int      `json:"maxReplicasPerHost" yaml:"maxReplicasPerHost"`
+		Image              string   `json:"image"`
+		Cmd                string   `json:"cmd,omitempty"`
+		EnvFiles           []string `json:"envFiles,omitempty" yaml:"envFiles,omitempty"`
 		Env                []struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
@@ -24,6 +26,7 @@ type Unit struct {
 		Machine    []string `json:"machine,omitempty"`
 		MachineID  string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
 		DockerArgs []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
+		Global     bool     `json:"global,omitempty"`
 	} `json:"spec"`
 }
 
