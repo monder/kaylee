@@ -102,6 +102,7 @@ var Server = cli.Command{
 			}
 		})
 
+		go registrator.ReloadAllInstances()
 		registrator.RunDockerLoop()
 	},
 }

@@ -23,10 +23,11 @@ type Unit struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
 		} `json:"labels,omitempty"`
-		Machine    []string `json:"machine,omitempty"`
-		MachineID  string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
-		DockerArgs []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
-		Global     bool     `json:"global,omitempty"`
+		StartupDelay int      `json:"startupDelay,omitempty" yaml:"startupDelay,omitempty"`
+		Machine      []string `json:"machine,omitempty"`
+		MachineID    string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
+		DockerArgs   []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
+		Global       bool     `json:"global,omitempty"`
 	} `json:"spec"`
 }
 
@@ -49,7 +50,7 @@ func (u *Units) getEtcdAPI() etcd.KeysAPI {
 	return etcdAPI
 }
 
-func (u *Units) ReloadAll(cb func(*Unit)) {
+func (u *Units) ReloadAll(schedule func(*Unit, bool)) {
 	etcdAPI := u.getEtcdAPI()
 	resp, err := etcdAPI.Get(
 		context.Background(),
@@ -63,11 +64,11 @@ func (u *Units) ReloadAll(cb func(*Unit)) {
 		if err != nil {
 			fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)
 		}
-		cb(&unit)
+		schedule(&unit, false)
 	}
 }
 
-func (u *Units) WatchForChanges(isMaster *bool, cb func(*Unit)) {
+func (u *Units) WatchForChanges(isMaster *bool, schedule func(*Unit, bool)) {
 	etcdAPI := u.getEtcdAPI()
 	watcher := etcdAPI.Watcher(
 		u.EtcdKey,
@@ -78,18 +79,21 @@ func (u *Units) WatchForChanges(isMaster *bool, cb func(*Unit)) {
 	)
 	for {
 		change, err := watcher.Next(context.Background())
-		Assert(err)
 		if *isMaster == false {
 			fmt.Println("Not watching anymore")
 			return
 		}
-		if change.Node != nil && (change.PrevNode == nil || change.Node.Value != change.PrevNode.Value) {
+		if err != nil { // e.g. outdated event
+			u.ReloadAll(schedule)
+			return
+		}
+		if change.Node != nil {
 			var unit Unit
 			err = json.Unmarshal([]byte(change.Node.Value), &unit)
 			if err != nil {
 				fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
 			}
-			cb(&unit)
+			schedule(&unit, false)
 		}
 	}
 }

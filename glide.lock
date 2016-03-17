@@ -1,5 +1,5 @@
 hash: 022f585d4668df9f4b3a8417ddc3ffc4f50a811d4e2ae77aa6ebda9723c18a9a
-updated: 2016-03-13T12:16:19.05196017+02:00
+updated: 2016-03-17T08:48:34.916251587+02:00
 imports:
 - name: github.com/codegangsta/cli
   version: aca5b047ed14d17224157c3434ea93bf6cdaadee
@@ -55,7 +55,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502
 - name: github.com/ugorji/go
-  version: 187fa0f8af224437e08ecb3f208c4d1a94859a61
+  version: c062049c1793b01a3cc3fe786108edabbaf7756b
   subpackages:
   - codec
 - name: gopkg.in/yaml.v2

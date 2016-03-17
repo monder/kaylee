@@ -111,11 +111,11 @@ func (r *Registrator) ReloadAllInstances() {
 		etcdAPI.Set(context.Background(), n.Key, "",
 			&etcd.SetOptions{
 				Dir:       true,
-				TTL:       5 * time.Second,
+				TTL:       20 * time.Second,
 				PrevExist: etcd.PrevExist,
 			},
 		)
-		time.Sleep(10 * time.Second)
+		time.Sleep(40 * time.Second)
 	}
 }
 

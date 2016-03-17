@@ -17,7 +17,10 @@ type Fleet struct {
 	Prefix string
 }
 
-func (fleet *Fleet) ScheduleUnit(unit *Unit) {
+func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
+	specData, _ := json.Marshal(unit)
+	specHash := sha1.Sum(specData)
+
 	replicaUnit := true
 	if unit.Spec.Replicas == 0 {
 		unit.Spec.Replicas = 1
@@ -31,6 +34,10 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 	existingUnits, _ := fleet.API.Units()
 	for _, u := range existingUnits {
 		if strings.HasPrefix(u.Name, fmt.Sprintf("%s:%s:", fleet.Prefix, unit.Name)) {
+			if !force && strings.HasPrefix(u.Name, fmt.Sprintf("%s:%s:%x:", fleet.Prefix, unit.Name, specHash[:3])) {
+				// If the unit is already somewhere in the cluster
+				return
+			}
 			unitsToRemove = append(unitsToRemove, u.Name)
 		}
 	}
@@ -44,8 +51,6 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 	}
 
 	// Schedule replicas
-	specData, _ := json.Marshal(unit)
-	specHash := sha1.Sum(specData)
 	for i := 1; i <= unit.Spec.Replicas; i++ {
 		unitName := fmt.Sprintf("%s:%s:%x:%s:%d.service",
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)], i)
@@ -60,6 +65,9 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit) {
 			fmt.Println("Unable to create unit:", err)
 		}
 		fleet.waitForUnitStart(unitName)
+		if unit.Spec.StartupDelay > 0 {
+			time.Sleep(time.Duration(unit.Spec.StartupDelay) * time.Second)
+		}
 		if len(unitsToRemove) > 0 {
 			fmt.Println("Deleting unit:", unitsToRemove[0])
 			fleet.API.DestroyUnit(unitsToRemove[0])
@@ -139,6 +147,7 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 			Section: "Service", Name: "EnvironmentFile", Value: env,
 		})
 	}
+
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Spec.Image),
 	})
