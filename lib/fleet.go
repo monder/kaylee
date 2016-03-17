@@ -54,12 +54,17 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
 	for i := 1; i <= unit.Spec.Replicas; i++ {
 		unitName := fmt.Sprintf("%s:%s:%x:%s:%d.service",
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)], i)
-		conflictString := fmt.Sprintf("%s:%s:%x:%s:*.service",
-			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)])
-		if !replicaUnit {
-			conflictString = fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name)
+		var conflictStrings []string
+		if replicaUnit {
+			conflictStrings = append(conflictStrings, fmt.Sprintf("%s:%s:%x:%s:*.service",
+				fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)]))
+		} else {
+			conflictStrings = append(conflictStrings, fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name))
 		}
-		fleetUnit := makeFleetUnit(unitName, unit, conflictString)
+		for _, c := range unit.Spec.Conflicts {
+			conflictStrings = append(conflictStrings, fmt.Sprintf("%s:%s:*.service", fleet.Prefix, c))
+		}
+		fleetUnit := makeFleetUnit(unitName, unit, conflictStrings)
 		err := fleet.API.CreateUnit(fleetUnit)
 		if err != nil {
 			fmt.Println("Unable to create unit:", err)
@@ -117,7 +122,7 @@ func (fleet *Fleet) waitForUnitStart(name string) {
 	fmt.Println("Unable to schedule unit:", name)
 }
 
-func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.Unit {
+func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSchema.Unit {
 	dockerName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
 	dockerName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(dockerName, "")
 
@@ -190,9 +195,11 @@ func makeFleetUnit(name string, spec *Unit, conflictString string) *fleetSchema.
 		})
 	}
 
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "X-Fleet", Name: "Conflicts", Value: conflictString,
-	})
+	for _, c := range conflictStrings {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "X-Fleet", Name: "Conflicts", Value: c,
+		})
+	}
 	return &fleetSchema.Unit{
 		DesiredState: "launched",
 		Options:      options,

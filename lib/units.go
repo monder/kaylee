@@ -28,6 +28,7 @@ type Unit struct {
 		MachineID    string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
 		DockerArgs   []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
 		Global       bool     `json:"global,omitempty"`
+		Conflicts    []string `json:"conflicts,omitempty"`
 	} `json:"spec"`
 }
 
