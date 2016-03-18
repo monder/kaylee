@@ -94,7 +94,7 @@ func (u *Units) WatchForChanges(isMaster *bool, schedule func(*Unit, bool)) {
 			if err != nil {
 				fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
 			}
-			schedule(&unit, false)
+			schedule(&unit, true)
 		}
 	}
 }

@@ -29,6 +29,7 @@ func main() {
 		command.Server,
 		command.Run,
 		command.Ls,
+		command.NewRestartCommand(),
 	}
 
 	app.Run(os.Args)
