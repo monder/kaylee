@@ -28,6 +28,7 @@ func main() {
 	app.Commands = []cli.Command{
 		command.Server,
 		command.Run,
+		command.Ls,
 	}
 
 	app.Run(os.Args)
