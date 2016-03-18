@@ -13,9 +13,10 @@ func main() {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "etcd-endpoints",
-			Value: "http://127.0.0.1:4001,http://127.0.0.1:2379",
-			Usage: "a comma-delimited list of etcd endpoints",
+			Name:   "etcd-endpoints",
+			Value:  "http://127.0.0.1:4001,http://127.0.0.1:2379",
+			Usage:  "a comma-delimited list of etcd endpoints",
+			EnvVar: "ETCDCTL_ENDPOINT",
 		},
 		cli.StringFlag{
 			Name:  "etcd-prefix",
