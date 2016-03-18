@@ -9,7 +9,6 @@ import (
 	"github.com/monder/kaylee/lib"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"strings"
 )
 
 var Run = cli.Command{
@@ -30,10 +29,7 @@ var Run = cli.Command{
 		fmt.Println(err)
 		unitJson, err := json.Marshal(unit)
 
-		etcdClient, err := etcd.New(etcd.Config{
-			Endpoints: strings.Split(c.GlobalString("etcd-endpoints"), ","),
-		})
-		etcdAPI := etcd.NewKeysAPI(etcdClient)
+		etcdAPI := GetEtcdKeysAPI(c)
 		aaa, err := etcdAPI.Set(
 			context.Background(),
 			fmt.Sprintf("%s/units/%s", c.GlobalString("etcd-prefix"), unit.Name),

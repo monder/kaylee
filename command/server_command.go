@@ -18,14 +18,8 @@ import (
 )
 
 func getFleet(c *cli.Context) (*lib.Fleet, error) {
-	etcdClient, err := etcd.New(etcd.Config{
-		Endpoints: strings.Split(c.GlobalString("etcd-endpoints"), ","),
-	})
-	if err != nil {
-		return nil, err
-	}
-	etcdKeys := etcd.NewKeysAPI(etcdClient)
-	reg := registry.NewEtcdRegistry(etcdKeys, c.String("fleet-prefix"), 3.0*time.Second)
+	etcdAPI := GetEtcdKeysAPI(c)
+	reg := registry.NewEtcdRegistry(etcdAPI, c.String("fleet-prefix"), 3.0*time.Second)
 	fleet := lib.Fleet{
 		API: &fleetClient.RegistryClient{
 			Registry: reg,
