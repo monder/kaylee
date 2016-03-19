@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/codegangsta/cli"
-	"github.com/monder/kaylee/command"
+	"github.com/monder/kaylee/commands"
 	"os"
 )
 
@@ -26,10 +26,10 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		command.Server,
-		command.Run,
-		command.Ls,
-		command.NewRestartCommand(),
+		commands.NewServerCommand(),
+		commands.NewRunCommand(),
+		commands.NewLsCommand(),
+		commands.NewRestartCommand(),
 	}
 
 	app.Run(os.Args)
