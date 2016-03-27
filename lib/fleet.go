@@ -129,6 +129,7 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	var dockerArgs []string
 
 	dockerArgs = append(dockerArgs, fmt.Sprintf("-l s7r.name=%s", spec.Name))
+	dockerArgs = append(dockerArgs, fmt.Sprintf("-l kaylee.name=%s", spec.Name))
 
 	for _, env := range spec.Spec.Env {
 		dockerArgs = append(dockerArgs, fmt.Sprintf("-e %s=%s", env.Name, env.Value))
@@ -154,6 +155,9 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	}
 
 	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "TimeoutStartSec", Value: "0",
+	})
+	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Spec.Image),
 	})
 	options = append(options, &fleetSchema.UnitOption{
@@ -166,7 +170,7 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/docker run %s --name %s %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image, spec.Spec.Cmd),
+		Value:   fmt.Sprintf("/usr/bin/docker run %s --rm --name %s %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image, spec.Spec.Cmd),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{
@@ -176,7 +180,7 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 		Section: "Service", Name: "Restart", Value: "always",
 	})
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "RestartSec", Value: "10",
+		Section: "Service", Name: "RestartSec", Value: "30",
 	})
 
 	for _, machine := range spec.Spec.Machine {

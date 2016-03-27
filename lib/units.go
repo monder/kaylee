@@ -86,13 +86,14 @@ func (u *Units) WatchForChanges(isMaster *bool, schedule func(*Unit, bool)) {
 		}
 		if err != nil { // e.g. outdated event
 			u.ReloadAll(schedule)
-			return
+			return // TODO
 		}
 		if change.Node != nil {
 			var unit Unit
 			err = json.Unmarshal([]byte(change.Node.Value), &unit)
 			if err != nil {
 				fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
+				continue
 			}
 			schedule(&unit, true)
 		}

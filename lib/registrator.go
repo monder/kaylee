@@ -16,10 +16,11 @@ type Registrator struct {
 }
 
 type registratorInternal struct {
-	dockerClient *docker.Client
-	etcd         etcd.KeysAPI
-	etcdKey      string
-	id           string
+	dockerClient      *docker.Client
+	etcd              etcd.KeysAPI
+	etcdKey           string
+	id                string
+	runningContainers map[string]*docker.Container
 }
 
 func (r *registratorInternal) addContainer(ID string) {
@@ -29,6 +30,7 @@ func (r *registratorInternal) addContainer(ID string) {
 		name = "unknown"
 	}
 	fmt.Printf("add %s/%s/%s/%s\n", r.etcdKey, r.id, name, c.Name)
+	r.runningContainers[ID] = c
 	r.etcd.Set(
 		context.Background(),
 		fmt.Sprintf("%s/%s/%s/%s", r.etcdKey, r.id, name, c.Name),
@@ -38,7 +40,7 @@ func (r *registratorInternal) addContainer(ID string) {
 }
 
 func (r *registratorInternal) removeContainer(ID string) {
-	c, _ := r.dockerClient.InspectContainer(ID)
+	c := r.runningContainers[ID]
 	name := c.Config.Labels["s7r.name"]
 	if name == "" {
 		name = "unknown"
@@ -54,6 +56,7 @@ func (r *registratorInternal) removeContainer(ID string) {
 		fmt.Sprintf("%s/%s/%s", r.etcdKey, r.id, name),
 		&etcd.DeleteOptions{Dir: true},
 	)
+	delete(r.runningContainers, ID)
 }
 
 func (r *registratorInternal) resyncAll() {
@@ -135,13 +138,14 @@ func (r *Registrator) RunDockerLoop() {
 	Assert(err)
 	etcdAPI := etcd.NewKeysAPI(c)
 	ri := &registratorInternal{
-		dockerClient: dockerClient,
-		etcd:         etcdAPI,
-		etcdKey:      r.EtcdKey,
-		id:           r.ID,
+		dockerClient:      dockerClient,
+		etcd:              etcdAPI,
+		etcdKey:           r.EtcdKey,
+		id:                r.ID,
+		runningContainers: make(map[string]*docker.Container),
 	}
-	go ri.watchForReload()
 	ri.resyncAll()
+	go ri.watchForReload()
 
 	for {
 		select {
