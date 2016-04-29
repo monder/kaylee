@@ -19,10 +19,12 @@ type Unit struct {
 			Name  string `json:"name"`
 			Value string `json:"value"`
 		} `json:"env,omitempty"`
-		Labels []struct {
-			Name  string `json:"name"`
-			Value string `json:"value"`
-		} `json:"labels,omitempty"`
+		Volumes []struct {
+			ID      string `json:"id"`
+			Driver  string `json:"driver"`
+			Path    string `json:"path"`
+			Options string `json:"options"`
+		} `json:"volumes,omitempty"`
 		StartupDelay int      `json:"startupDelay,omitempty" yaml:"startupDelay,omitempty"`
 		Machine      []string `json:"machine,omitempty"`
 		MachineID    string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`

@@ -134,9 +134,6 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	for _, env := range spec.Spec.Env {
 		dockerArgs = append(dockerArgs, fmt.Sprintf("-e %s=%s", env.Name, env.Value))
 	}
-	for _, label := range spec.Spec.Labels {
-		dockerArgs = append(dockerArgs, fmt.Sprintf("-l %s=%s", label.Name, label.Value))
-	}
 	for _, arg := range spec.Spec.DockerArgs {
 		dockerArgs = append(dockerArgs, arg)
 	}
@@ -157,6 +154,16 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
 	})
+
+	for _, volume := range spec.Spec.Volumes {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "Service",
+			Name:    "ExecStartPre",
+			Value:   fmt.Sprintf("/usr/bin/docker volume create --name=%s --driver=%s --opt=%s", volume.ID, volume.Driver, volume.Options),
+		})
+		dockerArgs = append(dockerArgs, fmt.Sprintf("-v %s:%s", volume.ID, volume.Path))
+	}
+
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Spec.Image),
 	})
