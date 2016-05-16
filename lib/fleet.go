@@ -128,7 +128,6 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 
 	var dockerArgs []string
 
-	dockerArgs = append(dockerArgs, fmt.Sprintf("-l s7r.name=%s", spec.Name))
 	dockerArgs = append(dockerArgs, fmt.Sprintf("-l kaylee.name=%s", spec.Name))
 
 	for _, env := range spec.Spec.Env {

@@ -25,7 +25,7 @@ type registratorInternal struct {
 
 func (r *registratorInternal) addContainer(ID string) {
 	c, _ := r.dockerClient.InspectContainer(ID)
-	name := c.Config.Labels["s7r.name"]
+	name := c.Config.Labels["kaylee.name"]
 	if name == "" {
 		name = "unknown"
 	}
@@ -41,7 +41,10 @@ func (r *registratorInternal) addContainer(ID string) {
 
 func (r *registratorInternal) removeContainer(ID string) {
 	c := r.runningContainers[ID]
-	name := c.Config.Labels["s7r.name"]
+	if c == nil {
+		return
+	}
+	name := c.Config.Labels["kaylee.name"]
 	if name == "" {
 		name = "unknown"
 	}
