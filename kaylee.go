@@ -8,7 +8,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "0.3.0"
+	app.Version = "0.4.0"
 	app.Usage = "Container orchestration system for fleet"
 
 	app.Flags = []cli.Flag{
