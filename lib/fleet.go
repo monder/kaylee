@@ -22,12 +22,12 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
 	specHash := sha1.Sum(specData)
 
 	replicaUnit := true
-	if unit.Spec.Replicas == 0 {
-		unit.Spec.Replicas = 1
+	if unit.Replicas == 0 {
+		unit.Replicas = 1
 		replicaUnit = false
 	}
-	if unit.Spec.MaxReplicasPerHost == 0 {
-		unit.Spec.MaxReplicasPerHost = unit.Spec.Replicas
+	if unit.MaxReplicasPerHost == 0 {
+		unit.MaxReplicasPerHost = unit.Replicas
 	}
 	// Make a list of units we should replace
 	var unitsToRemove []string
@@ -43,15 +43,15 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
 	}
 
 	// Generate unique ids based on replica count and max replicas
-	conflictIds := make([]string, unit.Spec.MaxReplicasPerHost)
-	for i := 0; i < unit.Spec.MaxReplicasPerHost; i++ {
+	conflictIds := make([]string, unit.MaxReplicasPerHost)
+	for i := 0; i < unit.MaxReplicasPerHost; i++ {
 		r := make([]byte, 3)
 		rand.Read(r) //TODO err
 		conflictIds[i] = fmt.Sprintf("%x", r)
 	}
 
 	// Schedule replicas
-	for i := 1; i <= unit.Spec.Replicas; i++ {
+	for i := 1; i <= unit.Replicas; i++ {
 		unitName := fmt.Sprintf("%s:%s:%x:%s:%d.service",
 			fleet.Prefix, unit.Name, specHash[:3], conflictIds[i%len(conflictIds)], i)
 		var conflictStrings []string
@@ -61,7 +61,7 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
 		} else {
 			conflictStrings = append(conflictStrings, fmt.Sprintf("%s:%s:*.service", fleet.Prefix, unit.Name))
 		}
-		for _, c := range unit.Spec.Conflicts {
+		for _, c := range unit.Conflicts {
 			conflictStrings = append(conflictStrings, fmt.Sprintf("%s:%s:*.service", fleet.Prefix, c))
 		}
 		fleetUnit := makeFleetUnit(unitName, unit, conflictStrings)
@@ -70,9 +70,6 @@ func (fleet *Fleet) ScheduleUnit(unit *Unit, force bool) {
 			fmt.Println("Unable to create unit:", err)
 		}
 		fleet.waitForUnitStart(unitName)
-		if unit.Spec.StartupDelay > 0 {
-			time.Sleep(time.Duration(unit.Spec.StartupDelay) * time.Second)
-		}
 		if len(unitsToRemove) > 0 {
 			fmt.Println("Deleting unit:", unitsToRemove[0])
 			fleet.API.DestroyUnit(unitsToRemove[0])
@@ -123,18 +120,14 @@ func (fleet *Fleet) waitForUnitStart(name string) {
 }
 
 func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSchema.Unit {
-	dockerName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
-	dockerName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(dockerName, "")
+	uuidFileName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
+	uuidFileName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(uuidFileName, "")
+	uuidFile := "/var/run/kaylee_" + uuidFileName
 
-	var dockerArgs []string
+	var args []string
 
-	dockerArgs = append(dockerArgs, fmt.Sprintf("-l kaylee.name=%s", spec.Name))
-
-	for _, env := range spec.Spec.Env {
-		dockerArgs = append(dockerArgs, fmt.Sprintf("-e %s=%s", env.Name, env.Value))
-	}
-	for _, arg := range spec.Spec.DockerArgs {
-		dockerArgs = append(dockerArgs, arg)
+	for _, arg := range spec.Args {
+		args = append(args, arg)
 	}
 
 	var options []*fleetSchema.UnitOption
@@ -144,43 +137,63 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Unit", Name: "After", Value: "flanneld.service",
 	})
-	for _, env := range spec.Spec.EnvFiles {
+
+	for _, env := range spec.EnvFiles {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "Service", Name: "EnvironmentFile", Value: env,
 		})
 	}
+	for _, env := range spec.Env {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "Service", Name: "Environment", Value: fmt.Sprintf("%s=%s", env.Name, env.Value),
+		})
+	}
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "Environment", Value: fmt.Sprintf("KAYLEE_ID=%s", uuidFileName),
+	})
 
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
 	})
 
-	for _, volume := range spec.Spec.Volumes {
+	/*for _, volume := range spec.Spec.Volumes {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "Service",
 			Name:    "ExecStartPre",
 			Value:   fmt.Sprintf("/usr/bin/docker volume create --name=%s --driver=%s --opt=%s", volume.ID, volume.Driver, volume.Options),
 		})
 		dockerArgs = append(dockerArgs, fmt.Sprintf("-v %s:%s", volume.ID, volume.Path))
-	}
+	}TODO*/
 
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Spec.Image),
+		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/rkt stop --force=true --uuid-file=%s", uuidFile),
 	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/docker kill %s", dockerName),
-	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/docker rm %s", dockerName),
-	})
+
+	if spec.Net != "" {
+		args = append(args, fmt.Sprintf("--net=%s", spec.Net))
+	}
+	args = append(args, "--insecure-options=image")
+	args = append(args, "--inherit-env")
+	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
+
+	for _, app := range spec.Apps {
+		args = append(args, fmt.Sprintf("%s -- %s ---", app.Image, strings.Join(app.Args, " ")))
+	}
 
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/docker run %s --rm --name %s %s %s", strings.Join(dockerArgs, " "), dockerName, spec.Spec.Image, spec.Spec.Cmd),
+		Value:   fmt.Sprintf("/usr/bin/rkt run %s", strings.Join(args, " ")),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/docker stop %s", dockerName),
+		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt stop --uuid-file=%s", uuidFile),
+	})
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt rm --uuid-file=%s", uuidFile),
+	})
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rm %s", uuidFile),
 	})
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "Restart", Value: "always",
@@ -189,17 +202,17 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 		Section: "Service", Name: "RestartSec", Value: "30",
 	})
 
-	for _, machine := range spec.Spec.Machine {
+	for _, machine := range spec.Machine {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "X-Fleet", Name: "MachineMetadata", Value: machine,
 		})
 	}
-	if spec.Spec.MachineID != "" {
+	if spec.MachineID != "" {
 		options = append(options, &fleetSchema.UnitOption{
-			Section: "X-Fleet", Name: "MachineID", Value: spec.Spec.MachineID,
+			Section: "X-Fleet", Name: "MachineID", Value: spec.MachineID,
 		})
 	}
-	if spec.Spec.Global {
+	if spec.Global {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "X-Fleet", Name: "Global", Value: "true",
 		})

@@ -8,7 +8,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "0.4.0"
+	app.Version = "0.5.0"
 	app.Usage = "Container orchestration system for fleet"
 
 	app.Flags = []cli.Flag{
@@ -20,7 +20,7 @@ func main() {
 		},
 		cli.StringFlag{
 			Name:  "etcd-prefix",
-			Value: "/kaylee",
+			Value: "/kaylee2",
 			Usage: "a keyspace for unit data in etcd",
 		},
 	}

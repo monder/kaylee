@@ -8,30 +8,43 @@ import (
 )
 
 type Unit struct {
-	Name string `json:"name"`
-	Spec struct {
-		Replicas           int      `json:"replicas"`
-		MaxReplicasPerHost int      `json:"maxReplicasPerHost" yaml:"maxReplicasPerHost"`
-		Image              string   `json:"image"`
-		Cmd                string   `json:"cmd,omitempty"`
-		EnvFiles           []string `json:"envFiles,omitempty" yaml:"envFiles,omitempty"`
-		Env                []struct {
-			Name  string `json:"name"`
-			Value string `json:"value"`
-		} `json:"env,omitempty"`
+	Name               string
+	Replicas           int
+	MaxReplicasPerHost int `json:"maxReplicasPerHost,omitempty"`
+
+	EnvFiles []string `json:"envFiles,omitempty"`
+	Env      []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"env,omitempty"`
+
+	Volumes []struct {
+		ID      string `json:"id"`
+		Driver  string `json:"driver"`
+		Path    string `json:"path"`
+		Options string `json:"options"`
+	} `json:"volumes,omitempty"`
+
+	Net string `json:"net,omitempty"`
+
+	Apps []struct {
+		Image string   `json:"image"`
+		Args  []string `json:"args,omitempty"`
+
 		Volumes []struct {
 			ID      string `json:"id"`
 			Driver  string `json:"driver"`
 			Path    string `json:"path"`
 			Options string `json:"options"`
 		} `json:"volumes,omitempty"`
-		StartupDelay int      `json:"startupDelay,omitempty" yaml:"startupDelay,omitempty"`
-		Machine      []string `json:"machine,omitempty"`
-		MachineID    string   `json:"machineId,omitempty" yaml:"machineId,omitempty"`
-		DockerArgs   []string `json:"dockerArgs,omitempty" yaml:"dockerArgs,omitempty"`
-		Global       bool     `json:"global,omitempty"`
-		Conflicts    []string `json:"conflicts,omitempty"`
-	} `json:"spec"`
+	}
+
+	Args []string `json:"args,omitempty"`
+
+	Machine   []string `json:"machine,omitempty"`
+	MachineID string   `json:"machineId,omitempty"`
+	Global    bool     `json:"global,omitempty"`
+	Conflicts []string `json:"conflicts,omitempty"`
 }
 
 type Units struct {

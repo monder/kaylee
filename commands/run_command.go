@@ -6,8 +6,8 @@ import (
 	"github.com/codegangsta/cli"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/ghodss/yaml"
 	"github.com/monder/kaylee/lib"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
 
@@ -16,11 +16,11 @@ func NewRunCommand() cli.Command {
 		Name:      "run",
 		Usage:     "runs a new unit or update an existing one",
 		ArgsUsage: "<file>",
-		Action: func(c *cli.Context) {
+		Action: func(c *cli.Context) error {
 			fileName := c.Args().First()
 			if len(fileName) == 0 {
 				cli.ShowCommandHelp(c, "run")
-				return
+				return nil
 			}
 			yamlFile, err := ioutil.ReadFile(fileName)
 
@@ -39,9 +39,10 @@ func NewRunCommand() cli.Command {
 			)
 			if err != nil {
 				fmt.Println(err)
-				return
+				return err
 			}
 			fmt.Println(aaa)
+			return nil
 		},
 	}
 }

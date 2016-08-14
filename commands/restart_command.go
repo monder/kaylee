@@ -16,10 +16,10 @@ func NewRestartCommand() cli.Command {
 	}
 }
 
-func restart(c *cli.Context) {
+func restart(c *cli.Context) error {
 	if len(c.Args()) != 1 {
 		cli.ShowCommandHelp(c, "restart")
-		return
+		return nil
 	}
 
 	unitName := c.Args().First()
@@ -41,4 +41,5 @@ func restart(c *cli.Context) {
 	)
 	fmt.Println(resp)
 	fmt.Println(err)
+	return err
 }

@@ -59,11 +59,11 @@ func NewServerCommand() cli.Command {
 			},
 			cli.StringFlag{
 				Name:  "unit-prefix",
-				Value: "k",
+				Value: "k2",
 				Usage: "prefix for units in fleet",
 			},
 		},
-		Action: func(c *cli.Context) {
+		Action: func(c *cli.Context) error {
 			var isMaster bool
 			go cleanup(c, &isMaster)
 
@@ -82,24 +82,15 @@ func NewServerCommand() cli.Command {
 			fleet, err := getFleet(c)
 			lib.Assert(err)
 
-			registrator := &lib.Registrator{
-				EtcdEndpoints: strings.Split(c.GlobalString("etcd-endpoints"), ","),
-				EtcdKey:       fmt.Sprintf("%s/instances", c.GlobalString("etcd-prefix")),
-				ID:            id,
-			}
-
-			go cluster.MonitorMasterState(func(master bool) {
+			cluster.MonitorMasterState(func(master bool) {
 				fmt.Println("Master: ", master)
 				isMaster = master
 				if isMaster {
-					go registrator.ReloadAllInstances()
 					units.ReloadAll(fleet.ScheduleUnit)
 					go units.WatchForChanges(&isMaster, fleet.ScheduleUnit)
 				}
 			})
-
-			go registrator.ReloadAllInstances()
-			registrator.RunDockerLoop()
+			return nil
 		},
 	}
 }
