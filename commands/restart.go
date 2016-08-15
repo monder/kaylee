@@ -2,13 +2,15 @@ package commands
 
 import (
 	"fmt"
-	"github.com/codegangsta/cli"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
+	"gopkg.in/urfave/cli.v1"
 )
 
-func NewRestartCommand() cli.Command {
-	return cli.Command{
+var Restart cli.Command
+
+func init() {
+	Restart = cli.Command{
 		Name:      "restart",
 		Usage:     "restarts specified unit",
 		ArgsUsage: "<unit name>",

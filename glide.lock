@@ -1,8 +1,8 @@
-hash: b933260900f9c7a07cc5ed42869751fa33dd95e6bdbd13cd4ce73dfac959c820
-updated: 2016-08-14T11:08:50.290712448+03:00
+hash: 108a0fc09d7b15035d5cb8f552f742f28653088edaf4ab1d7ca8d51a151b4f36
+updated: 2016-08-15T09:21:53.487579578+03:00
 imports:
-- name: github.com/codegangsta/cli
-  version: 4205e9c4ee9672a8df5bb4fe486a8aa07e1e4037
+- name: github.com/cloudfoundry-incubator/candiedyaml
+  version: 99c3df83b51532e3615f851d8c2dbb638f5313bf
 - name: github.com/coreos/fleet
   version: c05214e9019b58c0beebb6bcc907ea1ee61def4b
   subpackages:
@@ -28,61 +28,26 @@ imports:
   version: 003851be7bb0694fe3cc457a49529a19388ee7cf
   subpackages:
   - etcd
-- name: github.com/docker/docker
-  version: e3a698fcd08026a4ac88ce230d0ea4934003a0c6
-  subpackages:
-  - opts
-  - pkg/archive
-  - pkg/fileutils
-  - pkg/homedir
-  - pkg/stdcopy
-  - pkg/idtools
-  - pkg/ioutils
-  - pkg/pools
-  - pkg/promise
-  - pkg/system
-  - pkg/longpath
-- name: github.com/docker/engine-api
-  version: f90ecdb1e989f834dabbd91807e891094aa069fe
-  subpackages:
-  - types/filters
-  - types/versions
-- name: github.com/docker/go-units
-  version: f2d77a61e3c169b43402a0a1e84f06daf29b8190
 - name: github.com/fsouza/go-dockerclient
   version: 107dc3807d24e581e874212dd9a7ba35599b893d
 - name: github.com/ghodss/yaml
   version: aa0c862057666179de291b67d9f093d12b5a8473
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
-- name: github.com/hashicorp/go-cleanhttp
-  version: ad28ea4487f05916463e2423a55166280e8254b5
 - name: github.com/mattn/go-runewidth
   version: d6bea18f789704b5f83375793155289da36a3c7f
 - name: github.com/niniwzw/etcdlock
   version: 7ce3dd2d4889443e53d22e14571b12111df4f92e
 - name: github.com/olekukonko/tablewriter
   version: daf2955e742cf123959884fdff4685aa79b63135
-- name: github.com/opencontainers/runc
-  version: 5dc3f3576efb5262bf582217e93f86c93944374d
-  subpackages:
-  - libcontainer/user
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
-- name: github.com/Sirupsen/logrus
-  version: f3cfb454f4c209e6668c95216c4744b8fddb2356
 - name: github.com/ugorji/go
   version: b94837a2404ab90efe9289e77a70694c355739cb
   subpackages:
   - codec
-- name: golang.org/x/net
-  version: a8c61998a557a37435f719980da368469c10bfed
-  subpackages:
-  - context
-- name: golang.org/x/sys
-  version: 62bee037599929a6e9146f29d10dd5208c43507d
-  subpackages:
-  - unix
+- name: gopkg.in/urfave/cli.v1
+  version: 1efa31f08b9333f1bd4882d61f9d668a70cd902e
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
 devImports: []

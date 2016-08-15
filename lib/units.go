@@ -9,7 +9,7 @@ import (
 
 type Unit struct {
 	Name               string
-	Replicas           int
+	Replicas           int `json:"replicas,omitempty"`
 	MaxReplicasPerHost int `json:"maxReplicasPerHost,omitempty"`
 
 	EnvFiles []string `json:"envFiles,omitempty"`
@@ -81,36 +81,5 @@ func (u *Units) ReloadAll(schedule func(*Unit, bool)) {
 			fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)
 		}
 		schedule(&unit, false)
-	}
-}
-
-func (u *Units) WatchForChanges(isMaster *bool, schedule func(*Unit, bool)) {
-	etcdAPI := u.getEtcdAPI()
-	watcher := etcdAPI.Watcher(
-		u.EtcdKey,
-		&etcd.WatcherOptions{
-			AfterIndex: 0,
-			Recursive:  true,
-		},
-	)
-	for {
-		change, err := watcher.Next(context.Background())
-		if *isMaster == false {
-			fmt.Println("Not watching anymore")
-			return
-		}
-		if err != nil { // e.g. outdated event
-			u.ReloadAll(schedule)
-			return // TODO
-		}
-		if change.Node != nil {
-			var unit Unit
-			err = json.Unmarshal([]byte(change.Node.Value), &unit)
-			if err != nil {
-				fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
-				continue
-			}
-			schedule(&unit, true)
-		}
 	}
 }

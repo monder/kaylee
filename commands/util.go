@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"github.com/codegangsta/cli"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
+	"gopkg.in/urfave/cli.v1"
 	"os"
 	"strings"
 )

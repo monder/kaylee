@@ -1,14 +1,15 @@
 package main
 
 import (
-	"github.com/codegangsta/cli"
+	"flag"
 	"github.com/monder/kaylee/commands"
+	"gopkg.in/urfave/cli.v1"
 	"os"
 )
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "0.5.0"
+	app.Version = "0.5.1"
 	app.Usage = "Container orchestration system for fleet"
 
 	app.Flags = []cli.Flag{
@@ -26,11 +27,12 @@ func main() {
 	}
 
 	app.Commands = []cli.Command{
-		commands.NewServerCommand(),
+		commands.Server,
 		commands.NewRunCommand(),
 		commands.NewLsCommand(),
-		commands.NewRestartCommand(),
+		commands.Restart,
 	}
 
+	flag.CommandLine.Parse(nil)
 	app.Run(os.Args)
 }

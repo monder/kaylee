@@ -3,18 +3,18 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/codegangsta/cli"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/ghodss/yaml"
 	"github.com/monder/kaylee/lib"
+	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 )
 
 func NewRunCommand() cli.Command {
 	return cli.Command{
 		Name:      "run",
-		Usage:     "runs a new unit or update an existing one",
+		Usage:     "runs a new unit or updates the existing one",
 		ArgsUsage: "<file>",
 		Action: func(c *cli.Context) error {
 			fileName := c.Args().First()

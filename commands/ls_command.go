@@ -3,12 +3,12 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/codegangsta/cli"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	fleetClient "github.com/coreos/fleet/client"
 	"github.com/monder/kaylee/lib"
 	"github.com/olekukonko/tablewriter"
+	"gopkg.in/urfave/cli.v1"
 	"os"
 
 	"github.com/coreos/fleet/registry"
@@ -50,7 +50,7 @@ func NewLsCommand() cli.Command {
 				}
 				firstLine := true
 				for _, unitState := range fleetUnits {
-					if strings.HasPrefix(unitState.Name, fmt.Sprintf("%s:%s:", "k2", unit.Name)) {
+					if strings.HasPrefix(unitState.Name, fmt.Sprintf("%s:%s:", c.GlobalString("etcd-prefix"), unit.Name)) {
 						line := []string{unit.Name, unitState.Name, unitState.SystemdSubState}
 						if !firstLine {
 							line[0] = ""
