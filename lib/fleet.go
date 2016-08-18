@@ -156,14 +156,21 @@ func makeFleetUnit(name string, spec *Unit, conflictStrings []string) *fleetSche
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
 	})
 
-	/*for _, volume := range spec.Spec.Volumes {
+	for _, volume := range spec.Volumes {
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf("/usr/bin/docker volume create --name=%s --driver=%s --opt=%s", volume.ID, volume.Driver, volume.Options),
+			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s %s %s", volume.Driver, volume.ID, volume.Options),
 		})
-		dockerArgs = append(dockerArgs, fmt.Sprintf("-v %s:%s", volume.ID, volume.Path))
-	}TODO*/
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "Service",
+			Name:    "ExecStopPost",
+			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s -u %s", volume.Driver, volume.ID),
+		})
+
+		args = append(args, fmt.Sprintf("--volume %s,kind=host,source=/mnt/%s/%s", volume.ID, volume.Driver, volume.ID))
+		args = append(args, fmt.Sprintf("--mount volume=%s,target=%s", volume.ID, volume.Path))
+	}
 
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/rkt stop --force=true --uuid-file=%s", uuidFile),

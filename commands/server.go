@@ -75,7 +75,7 @@ func monitorMasterStatus(c *cli.Context, id string) (<-chan etcdlock.MasterEvent
 		etcdlock.NewEtcdRegistry(strings.Split(c.GlobalString("etcd-endpoints"), ",")),
 		fmt.Sprintf("%s/master", c.GlobalString("etcd-prefix")),
 		id,
-		30,
+		1800,
 	)
 	if err != nil {
 		return nil, err
