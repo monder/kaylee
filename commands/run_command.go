@@ -6,7 +6,7 @@ import (
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	"github.com/ghodss/yaml"
-	"github.com/monder/kaylee/lib"
+	"github.com/monder/kaylee/spec"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
 )
@@ -25,7 +25,7 @@ func NewRunCommand() cli.Command {
 			yamlFile, err := ioutil.ReadFile(fileName)
 
 			fmt.Println(err)
-			var unit lib.Unit
+			var unit spec.Spec
 			err = yaml.Unmarshal(yamlFile, &unit)
 			fmt.Println(err)
 			unitJson, err := json.Marshal(unit)

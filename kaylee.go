@@ -29,7 +29,7 @@ func main() {
 	app.Commands = []cli.Command{
 		commands.Server,
 		commands.NewRunCommand(),
-		commands.NewLsCommand(),
+		commands.Ls,
 		commands.Restart,
 	}
 

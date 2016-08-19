@@ -5,47 +5,8 @@ import (
 	"fmt"
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/monder/kaylee/spec"
 )
-
-type Unit struct {
-	Name               string
-	Replicas           int `json:"replicas,omitempty"`
-	MaxReplicasPerHost int `json:"maxReplicasPerHost,omitempty"`
-
-	EnvFiles []string `json:"envFiles,omitempty"`
-	Env      []struct {
-		Name  string `json:"name"`
-		Value string `json:"value"`
-	} `json:"env,omitempty"`
-
-	Volumes []struct {
-		ID      string `json:"id"`
-		Driver  string `json:"driver"`
-		Path    string `json:"path"`
-		Options string `json:"options"`
-	} `json:"volumes,omitempty"`
-
-	Net string `json:"net,omitempty"`
-
-	Apps []struct {
-		Image string   `json:"image"`
-		Args  []string `json:"args,omitempty"`
-
-		Volumes []struct {
-			ID      string `json:"id"`
-			Driver  string `json:"driver"`
-			Path    string `json:"path"`
-			Options string `json:"options"`
-		} `json:"volumes,omitempty"`
-	}
-
-	Args []string `json:"args,omitempty"`
-
-	Machine   []string `json:"machine,omitempty"`
-	MachineID string   `json:"machineId,omitempty"`
-	Global    bool     `json:"global,omitempty"`
-	Conflicts []string `json:"conflicts,omitempty"`
-}
 
 type Units struct {
 	EtcdEndpoints []string
@@ -66,7 +27,7 @@ func (u *Units) getEtcdAPI() etcd.KeysAPI {
 	return etcdAPI
 }
 
-func (u *Units) ReloadAll(schedule func(*Unit, bool)) {
+func (u *Units) ReloadAll(schedule func(*spec.Spec, bool)) {
 	etcdAPI := u.getEtcdAPI()
 	resp, err := etcdAPI.Get(
 		context.Background(),
@@ -75,7 +36,7 @@ func (u *Units) ReloadAll(schedule func(*Unit, bool)) {
 	)
 	Assert(err)
 	for _, node := range resp.Node.Nodes {
-		var unit Unit
+		var unit spec.Spec
 		err = json.Unmarshal([]byte(node.Value), &unit)
 		if err != nil {
 			fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)

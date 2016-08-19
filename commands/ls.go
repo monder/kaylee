@@ -6,7 +6,7 @@ import (
 	etcd "github.com/coreos/fleet/Godeps/_workspace/src/github.com/coreos/etcd/client"
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	fleetClient "github.com/coreos/fleet/client"
-	"github.com/monder/kaylee/lib"
+	"github.com/monder/kaylee/spec"
 	"github.com/olekukonko/tablewriter"
 	"gopkg.in/urfave/cli.v1"
 	"os"
@@ -16,8 +16,10 @@ import (
 	"time"
 )
 
-func NewLsCommand() cli.Command {
-	return cli.Command{
+var Ls cli.Command
+
+func init() {
+	Ls = cli.Command{
 		Name:      "ls",
 		Usage:     "list units",
 		ArgsUsage: " ",
@@ -42,7 +44,7 @@ func NewLsCommand() cli.Command {
 			fleetUnits, err := fll.UnitStates()
 
 			for _, node := range res.Node.Nodes {
-				var unit lib.Unit
+				var unit spec.Spec
 				err = json.Unmarshal([]byte(node.Value), &unit)
 				if err != nil {
 					fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)

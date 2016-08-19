@@ -8,6 +8,7 @@ import (
 	fleetClient "github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/registry"
 	"github.com/monder/kaylee/lib"
+	"github.com/monder/kaylee/spec"
 	"github.com/niniwzw/etcdlock"
 	"github.com/satori/go.uuid"
 	"gopkg.in/urfave/cli.v1"
@@ -75,7 +76,7 @@ func monitorMasterStatus(c *cli.Context, id string) (<-chan etcdlock.MasterEvent
 		etcdlock.NewEtcdRegistry(strings.Split(c.GlobalString("etcd-endpoints"), ",")),
 		fmt.Sprintf("%s/master", c.GlobalString("etcd-prefix")),
 		id,
-		1800,
+		600,
 	)
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func monitorMasterStatus(c *cli.Context, id string) (<-chan etcdlock.MasterEvent
 type UnitEvent struct {
 	Error  error
 	Action string
-	Unit   *lib.Unit
+	Unit   *spec.Spec
 }
 
 func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
@@ -108,18 +109,18 @@ func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
 			if err != nil {
 				unitEvents <- UnitEvent{Error: err}
 			} else if change.Action == "delete" {
-				var unit lib.Unit
+				var unit spec.Spec
 				err = json.Unmarshal([]byte(change.PrevNode.Value), &unit)
 				if err != nil {
-					fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
+					fmt.Printf("Unable to parse spec %s. Err: %s\n", change.Node.Key, err)
 					continue
 				}
 				unitEvents <- UnitEvent{Action: "remove", Unit: &unit}
 			} else {
-				var unit lib.Unit
+				var unit spec.Spec
 				err = json.Unmarshal([]byte(change.Node.Value), &unit)
 				if err != nil {
-					fmt.Printf("Unable to parse unit %s. Err: %s\n", change.Node.Key, err)
+					fmt.Printf("Unable to parse spec %s. Err: %s\n", change.Node.Key, err)
 					continue
 				}
 				unitEvents <- UnitEvent{Action: "add", Unit: &unit}
@@ -171,8 +172,9 @@ func startServer(c *cli.Context) error {
 		case ue := <-unitsChan:
 			if isMaster {
 				if ue.Error != nil {
-					fmt.Println("Error in etcd. Reloading all units...")
-					units.ReloadAll(fleet.ScheduleUnit)
+					fmt.Println("Error in etcd. Exiting...")
+					cleanup(c, id)
+					return cli.NewExitError(ue.Error.Error(), 2)
 				} else if ue.Action == "add" {
 					fmt.Printf("Updating unit %s\n", ue.Unit.Name)
 					fleet.ScheduleUnit(ue.Unit, true)
