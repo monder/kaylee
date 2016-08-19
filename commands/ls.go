@@ -52,7 +52,7 @@ func init() {
 				}
 				firstLine := true
 				for _, unitState := range fleetUnits {
-					if strings.HasPrefix(unitState.Name, fmt.Sprintf("%s:%s:", c.GlobalString("etcd-prefix"), unit.Name)) {
+					if strings.HasPrefix(unitState.Name, fmt.Sprintf("%s:%s:", "k2", unit.Name)) {
 						line := []string{unit.Name, unitState.Name, unitState.SystemdSubState}
 						if !firstLine {
 							line[0] = ""
