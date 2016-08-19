@@ -9,23 +9,25 @@ import (
 	"github.com/monder/kaylee/spec"
 )
 
-type RktEngine struct{}
+type DockerEngine struct{}
 
-func (*RktEngine) IsValidSpecType(s *spec.Spec) bool {
-	return s.Engine == "" || s.Engine == "rkt"
+func (*DockerEngine) IsValidSpecType(s *spec.Spec) bool {
+	return s.Engine == "docker"
 }
 
-func (*RktEngine) ValidateSpec(s *spec.Spec) error {
+func (*DockerEngine) ValidateSpec(s *spec.Spec) error {
 	if len(s.Apps) == 0 {
 		return fmt.Errorf("There should be at least one app")
+	}
+	if len(s.Apps) > 1 {
+		return fmt.Errorf("Docker endigne does not support more than one app")
 	}
 	return nil
 }
 
-func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string) *fleetSchema.Unit {
-	uuidFileName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
-	uuidFileName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(uuidFileName, "")
-	uuidFile := "/var/run/kaylee_" + uuidFileName
+func (*DockerEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string) *fleetSchema.Unit {
+	dockerName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
+	dockerName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(dockerName, "")
 
 	var args []string
 
@@ -51,9 +53,6 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 			Section: "Service", Name: "Environment", Value: fmt.Sprintf("%s=%s", env.Name, env.Value),
 		})
 	}
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "Environment", Value: fmt.Sprintf("KAYLEE_ID=%s", uuidFileName),
-	})
 
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
@@ -63,47 +62,29 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 		options = append(options, &fleetSchema.UnitOption{
 			Section: "Service",
 			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s %s %s", volume.Driver, volume.ID, volume.Options),
+			Value:   fmt.Sprintf("/usr/bin/docker volume create --name=%s --driver=%s --opt=%s", volume.ID, volume.Driver, volume.Options),
 		})
-		options = append(options, &fleetSchema.UnitOption{
-			Section: "Service",
-			Name:    "ExecStopPost",
-			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s -u %s", volume.Driver, volume.ID),
-		})
-
-		args = append(args, fmt.Sprintf("--volume %s,kind=host,source=/mnt/%s/%s", volume.ID, volume.Driver, volume.ID))
-		args = append(args, fmt.Sprintf("--mount volume=%s,target=%s", volume.ID, volume.Path))
+		args = append(args, fmt.Sprintf("-v %s:%s", volume.ID, volume.Path))
 	}
 
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/rkt stop --force=true --uuid-file=%s", uuidFile),
+		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/docker pull %s", spec.Apps[0].Image),
 	})
-
-	if spec.Net != "" {
-		args = append(args, fmt.Sprintf("--net=%s", spec.Net))
-	}
-	args = append(args, "--insecure-options=image")
-	args = append(args, "--inherit-env")
-	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
-
-	for _, app := range spec.Apps {
-		args = append(args, fmt.Sprintf("%s -- %s ---", app.Image, strings.Join(app.Args, " ")))
-	}
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/docker kill %s", dockerName),
+	})
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/docker rm %s", dockerName),
+	})
 
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service",
 		Name:    "ExecStart",
-		Value:   fmt.Sprintf("/usr/bin/rkt run %s", strings.Join(args, " ")),
+		Value:   fmt.Sprintf("/usr/bin/docker run %s --rm --name %s %s %s", strings.Join(args, " "), dockerName, spec.Apps[0].Image, spec.Apps[0].Args),
 	})
 
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt stop --uuid-file=%s", uuidFile),
-	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt rm --uuid-file=%s", uuidFile),
-	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rm %s", uuidFile),
+		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/docker stop %s", dockerName),
 	})
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "Restart", Value: "always",

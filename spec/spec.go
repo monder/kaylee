@@ -24,13 +24,6 @@ type Spec struct {
 	Apps []struct {
 		Image string   `json:"image"`
 		Args  []string `json:"args,omitempty"`
-
-		Volumes []struct {
-			ID      string `json:"id"`
-			Driver  string `json:"driver"`
-			Path    string `json:"path"`
-			Options string `json:"options"`
-		} `json:"volumes,omitempty"`
 	}
 
 	Args []string `json:"args,omitempty"`
