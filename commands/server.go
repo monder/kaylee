@@ -7,7 +7,7 @@ import (
 	"github.com/coreos/fleet/Godeps/_workspace/src/golang.org/x/net/context"
 	fleetClient "github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/registry"
-	"github.com/monder/kaylee/lib"
+	"github.com/monder/kaylee/fleet"
 	"github.com/monder/kaylee/spec"
 	"github.com/niniwzw/etcdlock"
 	"github.com/satori/go.uuid"
@@ -43,10 +43,10 @@ func init() {
 	}
 }
 
-func getFleet(c *cli.Context) (*lib.Fleet, error) {
+func getFleet(c *cli.Context) (*fleet.Fleet, error) {
 	etcdAPI := GetEtcdKeysAPI(c)
 	reg := registry.NewEtcdRegistry(etcdAPI, c.String("fleet-prefix"), 3.0*time.Second)
-	fleet := lib.Fleet{
+	fleet := fleet.Fleet{
 		API: &fleetClient.RegistryClient{
 			Registry: reg,
 		},
@@ -130,14 +130,30 @@ func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
 	return unitEvents
 }
 
+func reloadAll(c *cli.Context, fleet *fleet.Fleet) error {
+	etcdAPI := GetEtcdKeysAPI(c)
+	resp, err := etcdAPI.Get(
+		context.Background(),
+		fmt.Sprintf("%s/units", c.GlobalString("etcd-prefix")),
+		&etcd.GetOptions{Recursive: true},
+	)
+	if err != nil {
+		return err
+	}
+	for _, node := range resp.Node.Nodes {
+		var unit spec.Spec
+		err = json.Unmarshal([]byte(node.Value), &unit)
+		if err != nil {
+			fmt.Printf("Unable to parse unit %s. Err: %s\n", node.Key, err)
+		}
+		fleet.ScheduleUnit(&unit, false)
+	}
+	return nil
+}
+
 func startServer(c *cli.Context) error {
 	id := uuid.NewV4().String()
 	fmt.Printf("Launching new node with id: %s\n", id)
-
-	units := &lib.Units{
-		EtcdEndpoints: strings.Split(c.GlobalString("etcd-endpoints"), ","),
-		EtcdKey:       fmt.Sprintf("%s/units", c.GlobalString("etcd-prefix")),
-	}
 
 	fleet, err := getFleet(c)
 	if err != nil {
@@ -164,7 +180,7 @@ func startServer(c *cli.Context) error {
 			if e.Type == etcdlock.MasterAdded {
 				isMaster = true
 				fmt.Println("Master status acquired")
-				units.ReloadAll(fleet.ScheduleUnit)
+				reloadAll(c, fleet) // TODO handle error?
 			} else if e.Type == etcdlock.MasterDeleted {
 				isMaster = false
 				fmt.Println("Master status lost")
