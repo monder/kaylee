@@ -48,7 +48,7 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 	}
 	for _, env := range spec.Env {
 		options = append(options, &fleetSchema.UnitOption{
-			Section: "Service", Name: "Environment", Value: fmt.Sprintf("%s=%s", env.Name, env.Value),
+			Section: "Service", Name: "Environment", Value: fmt.Sprintf("%q", fmt.Sprintf("%s=%s", env.Name, env.Value)),
 		})
 	}
 	options = append(options, &fleetSchema.UnitOption{
