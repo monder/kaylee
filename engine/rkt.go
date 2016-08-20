@@ -59,20 +59,26 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
 	})
 
-	for _, volume := range spec.Volumes {
-		options = append(options, &fleetSchema.UnitOption{
-			Section: "Service",
-			Name:    "ExecStartPre",
-			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s %s %s", volume.Driver, volume.ID, volume.Options),
-		})
-		options = append(options, &fleetSchema.UnitOption{
-			Section: "Service",
-			Name:    "ExecStopPost",
-			Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s -u %s", volume.Driver, volume.ID),
-		})
+	for volumeIndex, volume := range spec.Volumes {
+		if volume.Driver == "" {
+			// Assume "host"
+			args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=%q", volumeIndex, volume.Source))
+			args = append(args, fmt.Sprintf("--mount volume=kaylee-volume-%d,target=%q", volumeIndex, volume.Path))
+		} else {
+			options = append(options, &fleetSchema.UnitOption{
+				Section: "Service",
+				Name:    "ExecStartPre",
+				Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s %s %s", volume.Driver, volume.ID, volume.Options),
+			})
+			options = append(options, &fleetSchema.UnitOption{
+				Section: "Service",
+				Name:    "ExecStopPost",
+				Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s -u %s", volume.Driver, volume.ID),
+			})
 
-		args = append(args, fmt.Sprintf("--volume %s,kind=host,source=/mnt/%s/%s", volume.ID, volume.Driver, volume.ID))
-		args = append(args, fmt.Sprintf("--mount volume=%s,target=%s", volume.ID, volume.Path))
+			args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=/mnt/%s/%s/%s", volumeIndex, volume.Driver, volume.ID, volume.Source))
+			args = append(args, fmt.Sprintf("--mount volume=kaylee-volume-%d,target=%s", volumeIndex, volume.Path))
+		}
 	}
 
 	options = append(options, &fleetSchema.UnitOption{

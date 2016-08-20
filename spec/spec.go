@@ -13,10 +13,11 @@ type Spec struct {
 	} `json:"env,omitempty"`
 
 	Volumes []struct {
-		ID      string `json:"id"`
-		Driver  string `json:"driver"`
+		ID      string `json:"id,omitempty"`
+		Driver  string `json:"driver,omitempty"`
+		Source  string `json:"source,omitempty"`
 		Path    string `json:"path"`
-		Options string `json:"options"`
+		Options string `json:"options,omitempty"`
 	} `json:"volumes,omitempty"`
 
 	Net string `json:"net,omitempty"`
