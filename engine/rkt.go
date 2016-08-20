@@ -87,6 +87,9 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
 
 	for _, app := range spec.Apps {
+		options = append(options, &fleetSchema.UnitOption{
+			Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/rkt fetch --insecure-options=image %s", app.Image),
+		})
 		args = append(args, fmt.Sprintf("%s -- %s ---", app.Image, strings.Join(app.Args, " ")))
 	}
 
