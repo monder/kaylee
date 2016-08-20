@@ -180,7 +180,7 @@ func startServer(c *cli.Context) error {
 			if e.Type == etcdlock.MasterAdded {
 				isMaster = true
 				fmt.Println("Master status acquired")
-				reloadAll(c, fleet) // TODO handle error?
+				//reloadAll(c, fleet) // TODO handle error?
 			} else if e.Type == etcdlock.MasterDeleted {
 				isMaster = false
 				fmt.Println("Master status lost")
