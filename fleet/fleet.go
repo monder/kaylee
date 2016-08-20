@@ -26,6 +26,7 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 		unit.Replicas = 1
 		replicaUnit = false
 	}
+
 	if unit.MaxReplicasPerHost == 0 {
 		unit.MaxReplicasPerHost = unit.Replicas
 	}
@@ -68,29 +69,54 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 		if err != nil {
 			fmt.Println("Unable to create unit:", err)
 		}
+
+		if !replicaUnit { // If its not replica unit - first delete
+			if len(unitsToRemove) > 0 {
+				fmt.Println("Deleting unit:", unitsToRemove[0])
+				fleet.destroyFleetUnit(unitsToRemove[0])
+				unitsToRemove = unitsToRemove[1:]
+			}
+		}
+
 		err = fleet.API.CreateUnit(fleetUnit)
 		if err != nil {
 			fmt.Println("Unable to create unit:", err)
 		}
-		fleet.waitForUnitStart(unitName)
-		if len(unitsToRemove) > 0 {
-			fmt.Println("Deleting unit:", unitsToRemove[0])
-			fleet.API.DestroyUnit(unitsToRemove[0])
-			unitsToRemove = unitsToRemove[1:]
-		} else {
-			fmt.Println("No more units to remove")
+		err = fleet.waitForUnitStart(unitName)
+		if err != nil {
+			fmt.Println("Unable to schedule unit:", err)
+			return //TODO
+		}
+		if replicaUnit { // If it is a replica unit - destroy after successfull start
+			if len(unitsToRemove) > 0 {
+				fmt.Println("Deleting unit:", unitsToRemove[0])
+				fleet.destroyFleetUnit(unitsToRemove[0])
+				unitsToRemove = unitsToRemove[1:]
+			} else {
+				fmt.Println("No more units to remove")
+			}
 		}
 	}
 	for _, unit := range unitsToRemove {
 		fmt.Println("Deleting unit:", unit)
-		fleet.API.DestroyUnit(unit)
+		fleet.destroyFleetUnit(unit)
 	}
 }
 
-func (fleet *Fleet) waitForUnitStart(name string) {
+func (fleet *Fleet) destroyFleetUnit(name string) {
+	//fmt.Println("Stopping:", name)
+	//fleet.API.SetUnitTargetState(name, "loaded")
+	//time.Sleep(30 * time.Second) // TODO wait for stop
+
+	// https://github.com/coreos/fleet/issues/1000
+	fmt.Println("Destroying:", name)
+	fleet.API.DestroyUnit(name)
+}
+
+func (fleet *Fleet) waitForUnitStart(name string) error {
 	fmt.Println("Waiting for unit to start:", name)
 	prevState := "undefined"
-	for i := 0; i < 60; i++ {
+	for i := 0; i < 300; i++ {
 		currentState := "unknown"
 		states, err := fleet.API.UnitStates()
 		if err != nil {
@@ -115,9 +141,9 @@ func (fleet *Fleet) waitForUnitStart(name string) {
 		if currentState == "running" {
 			fmt.Print("\n")
 			fmt.Println("Unit started:", name)
-			return
+			return nil
 		}
 		time.Sleep(time.Second)
 	}
-	fmt.Println("Unable to schedule unit:", name)
+	return fmt.Errorf("Unit %s failed to start after 5 minutes", name)
 }
