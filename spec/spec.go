@@ -1,7 +1,7 @@
 package spec
 
 type Spec struct {
-	Name               string
+	Name               string `json:"name"`
 	Replicas           int    `json:"replicas,omitempty"`
 	MaxReplicasPerHost int    `json:"maxReplicasPerHost,omitempty"`
 	Engine             string `json:"engine,omitempty"`
@@ -24,8 +24,9 @@ type Spec struct {
 
 	Apps []struct {
 		Image string   `json:"image"`
+		Cmd   string   `json:"cmd,omitempty"`
 		Args  []string `json:"args,omitempty"`
-	}
+	} `json:"apps"`
 
 	Args []string `json:"args,omitempty"`
 
