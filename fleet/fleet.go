@@ -145,5 +145,7 @@ func (fleet *Fleet) waitForUnitStart(name string) error {
 		}
 		time.Sleep(time.Second)
 	}
+	fmt.Print("\n")
+	fleet.API.SetUnitTargetState(name, "loaded")
 	return fmt.Errorf("Unit %s failed to start after 5 minutes", name)
 }
