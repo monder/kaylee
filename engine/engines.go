@@ -18,7 +18,6 @@ var engines []Engine
 func init() {
 	engines = []Engine{
 		&RktEngine{},
-		&DockerEngine{},
 	}
 }
 
