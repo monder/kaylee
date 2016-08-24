@@ -85,13 +85,13 @@ func monitorMasterStatus(c *cli.Context, id string) (<-chan etcdlock.MasterEvent
 	return lock.EventsChan(), nil
 }
 
-type UnitEvent struct {
+type unitEvent struct {
 	Error  error
 	Action string
 	Unit   *spec.Spec
 }
 
-func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
+func monitorUnitSpecs(c *cli.Context) <-chan unitEvent {
 	etcdAPI := GetEtcdKeysAPI(c)
 	// Create a dir if not exist
 	etcdAPI.Set(context.Background(), fmt.Sprintf("%s/units", c.GlobalString("etcd-prefix")), "", &etcd.SetOptions{Dir: true})
@@ -102,12 +102,12 @@ func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
 			Recursive:  true,
 		},
 	)
-	unitEvents := make(chan UnitEvent, 10)
+	unitEvents := make(chan unitEvent, 10)
 	go func() {
 		for {
 			change, err := unitWatcher.Next(context.Background())
 			if err != nil {
-				unitEvents <- UnitEvent{Error: err}
+				unitEvents <- unitEvent{Error: err}
 			} else if change.Action == "delete" {
 				var unit spec.Spec
 				err = json.Unmarshal([]byte(change.PrevNode.Value), &unit)
@@ -115,7 +115,7 @@ func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
 					fmt.Printf("Unable to parse spec %s. Err: %s\n", change.Node.Key, err)
 					continue
 				}
-				unitEvents <- UnitEvent{Action: "remove", Unit: &unit}
+				unitEvents <- unitEvent{Action: "remove", Unit: &unit}
 			} else {
 				var unit spec.Spec
 				err = json.Unmarshal([]byte(change.Node.Value), &unit)
@@ -123,7 +123,7 @@ func monitorUnitSpecs(c *cli.Context) <-chan UnitEvent {
 					fmt.Printf("Unable to parse spec %s. Err: %s\n", change.Node.Key, err)
 					continue
 				}
-				unitEvents <- UnitEvent{Action: "add", Unit: &unit}
+				unitEvents <- unitEvent{Action: "add", Unit: &unit}
 			}
 		}
 	}()

@@ -87,7 +87,7 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 			fmt.Println("Unable to schedule unit:", err)
 			return //TODO
 		}
-		if replicaUnit { // If it is a replica unit - destroy after successfull start
+		if replicaUnit { // If it is a replica unit - destroy after successful start
 			if len(unitsToRemove) > 0 {
 				fmt.Println("Deleting unit:", unitsToRemove[0])
 				fleet.destroyFleetUnit(unitsToRemove[0])
