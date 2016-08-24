@@ -1,4 +1,8 @@
 # Kaylee
+[![Go Report Card](https://goreportcard.com/badge/github.com/monder/kaylee)](https://goreportcard.com/report/github.com/monder/kaylee)
+[![license](https://img.shields.io/github/license/monder/kaylee.svg?maxAge=2592000&style=flat-square)]()
+[![GitHub tag](https://img.shields.io/github/tag/monder/kaylee.svg?style=flat-square)]()
+
 
 Kaylee is a container management system built on top of [fleet] and [etcd] as a lightweight alternative to [kubernetes] or [nomad].
 
