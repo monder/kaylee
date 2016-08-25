@@ -59,6 +59,10 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 		Section: "Service", Name: "TimeoutStartSec", Value: "0",
 	})
 
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "KillMode", Value: "mixed",
+	})
+
 	for volumeIndex, volume := range spec.Volumes {
 		if volume.Driver == "" {
 			// Assume "host"
