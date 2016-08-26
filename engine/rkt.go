@@ -29,10 +29,6 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 
 	var args []string
 
-	for _, arg := range spec.Args {
-		args = append(args, arg)
-	}
-
 	var options []*fleetSchema.UnitOption
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Unit", Name: "Requires", Value: "flanneld.service",
@@ -105,6 +101,10 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 	args = append(args, "--insecure-options=image")
 	args = append(args, "--inherit-env")
 	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
+
+	for _, arg := range spec.Args {
+		args = append(args, arg)
+	}
 
 	for _, app := range spec.Apps {
 		options = append(options, &fleetSchema.UnitOption{
