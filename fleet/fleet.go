@@ -82,7 +82,7 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 		if err != nil {
 			fmt.Println("Unable to create unit:", err)
 		}
-		err = fleet.waitForUnitStart(unitName)
+		err = fleet.waitForUnitState(unitName, "running", 10, 300)
 		if err != nil {
 			fmt.Println("Unable to schedule unit:", err)
 			return //TODO
@@ -104,23 +104,25 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 }
 
 func (fleet *Fleet) destroyFleetUnit(name string) {
-	//fmt.Println("Stopping:", name)
-	//fleet.API.SetUnitTargetState(name, "loaded")
-	//time.Sleep(30 * time.Second) // TODO wait for stop
-
 	// https://github.com/coreos/fleet/issues/1000
-	fmt.Println("Destroying:", name)
+	fmt.Println("Stopping: ", name)
+	fleet.API.SetUnitTargetState(name, "loaded")
+	fleet.waitForUnitState(name, "dead", 1, 30)
+	fmt.Println("Destroying: ", name)
 	fleet.API.DestroyUnit(name)
 }
 
-func (fleet *Fleet) waitForUnitStart(name string) error {
-	fmt.Println("Waiting for unit to start:", name)
+func (fleet *Fleet) waitForUnitState(name string, targetState string, stableSec int, timeoutSec int) error {
+	fmt.Printf("Waiting for unit '%s' to become '%s'\n", name, targetState)
+
+	inDesiredState := 0
 	prevState := "undefined"
-	for i := 0; i < 300; i++ {
+	for i := 0; i < timeoutSec; i++ {
 		currentState := "unknown"
 		states, err := fleet.API.UnitStates()
 		if err != nil {
 			fmt.Println("Unable to retrieve unit state")
+			time.Sleep(time.Second)
 			continue
 		}
 		for _, state := range states {
@@ -138,14 +140,20 @@ func (fleet *Fleet) waitForUnitStart(name string) error {
 		} else {
 			fmt.Print(".")
 		}
-		if currentState == "running" {
-			fmt.Print("\n")
-			fmt.Println("Unit started:", name)
-			return nil
+		if currentState == targetState {
+			// check if its in target state for at least stableSec seconds
+			if inDesiredState == stableSec {
+				fmt.Print("\n")
+				fmt.Println("Unit started:", name)
+				return nil
+			} else {
+				inDesiredState++
+			}
+		} else {
+			inDesiredState = 0
 		}
 		time.Sleep(time.Second)
 	}
-	fmt.Print("\n")
 	fleet.API.SetUnitTargetState(name, "loaded")
-	return fmt.Errorf("Unit %s failed to start after 5 minutes", name)
+	return fmt.Errorf("Unit '%s' failed to become '%s' after %d seconds", name, targetState, timeoutSec)
 }

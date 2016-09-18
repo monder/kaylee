@@ -25,7 +25,6 @@ func (*RktEngine) ValidateSpec(s *spec.Spec) error {
 func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string) *fleetSchema.Unit {
 	uuidFileName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
 	uuidFileName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(uuidFileName, "")
-	uuidFile := "/var/run/kaylee_" + uuidFileName
 
 	var args []string
 
@@ -91,16 +90,11 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 		}
 	}
 
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("-/usr/bin/rkt stop --force=true --uuid-file=%s", uuidFile),
-	})
-
 	if spec.Net != "" {
 		args = append(args, fmt.Sprintf("--net=%s", spec.Net))
 	}
-	args = append(args, "--insecure-options=image")
+	args = append(args, "--insecure-options=image,ondisk")
 	args = append(args, "--inherit-env")
-	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
 
 	for _, arg := range spec.Args {
 		args = append(args, arg)
@@ -108,7 +102,7 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 
 	for _, app := range spec.Apps {
 		options = append(options, &fleetSchema.UnitOption{
-			Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/rkt fetch --insecure-options=image %s", app.Image),
+			Section: "Service", Name: "ExecStartPre", Value: fmt.Sprintf("/usr/bin/rkt fetch --insecure-options=image,ondisk %s", app.Image),
 		})
 		imageOptions := ""
 		if app.Cmd != "" {
@@ -124,13 +118,10 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 	})
 
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt stop --uuid-file=%s", uuidFile),
+		Section: "Service", Name: "ExecStopPost", Value: "/usr/bin/rkt gc",
 	})
 	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt rm --uuid-file=%s", uuidFile),
-	})
-	options = append(options, &fleetSchema.UnitOption{
-		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rm %s", uuidFile),
+		Section: "Service", Name: "ExecStopPost", Value: "/usr/bin/rkt image gc",
 	})
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "Restart", Value: "always",
