@@ -103,6 +103,23 @@ func (fleet *Fleet) ScheduleUnit(unit *spec.Spec, force bool) {
 	}
 }
 
+func (fleet *Fleet) DestroyUnit(unitName string) {
+
+	// Make a list of units we should remove
+	var unitsToRemove []string
+	existingUnits, _ := fleet.API.Units()
+	for _, u := range existingUnits {
+		if strings.HasPrefix(u.Name, fmt.Sprintf("%s:%s:", fleet.Prefix, unitName)) {
+			unitsToRemove = append(unitsToRemove, u.Name)
+		}
+	}
+
+	for _, unit := range unitsToRemove {
+		fmt.Println("Deleting unit:", unit)
+		fleet.destroyFleetUnit(unit)
+	}
+}
+
 func (fleet *Fleet) destroyFleetUnit(name string) {
 	// https://github.com/coreos/fleet/issues/1000
 	fmt.Println("Stopping: ", name)

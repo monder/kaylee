@@ -195,7 +195,8 @@ func startServer(c *cli.Context) error {
 					fmt.Printf("Updating unit %s\n", ue.Unit.Name)
 					fleet.ScheduleUnit(ue.Unit, true)
 				} else if ue.Action == "remove" {
-					fmt.Printf("Should remove unit %s [NOT IMPLEMENTED]\n", ue.Unit.Name) //TODO
+					fmt.Printf("Removing unit %s\n", ue.Unit.Name)
+					fleet.DestroyUnit(ue.Unit.Name)
 				}
 			}
 		case <-sigsChan:
