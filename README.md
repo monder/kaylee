@@ -131,6 +131,43 @@ For example the [sample above](#example-unit) is the entry `/kaylee2/units/count
 {"name":"countly","replicas":4,"maxReplicasPerHost":2,"env":[{"name":"MONGO_URL","value":"mongodb://mongo-1.lan,mongo-2.lan,mongo-3.lan/countly?replicaSet=main"}],"apps":[{"image":"docker://monder/countly-docker:latest"},{"image":"monder.cc/rkt-sidekick:v0.0.3","args":["--cidr 10.5.0.0/16","--interval 10m","--expireDir /services","--format '$$ip:80'","/services/countly/${KAYLEE_ID}"]}],"args":["--dns=10.0.0.2","--net=flannel,default"],"machine":["ssd=false"]}
 ```
 
+## Volumes
+
+It is possible to setup automatic volume mounting per container. There are two options:
+
+### systemd
+
+This approach requires all instances to have a systemd teplate unit.
+e.g to mount AWS EBS volumes, you can create a unit named `ebs@.service`:
+```
+[Unit]
+Requires=network.target
+After=network.target
+StopWhenUnneeded=true
+RefuseManualStart=true
+RefuseManualStop=true
+[Service]
+TimeoutStartSec=0
+Type=oneshot
+RemainAfterExit=true
+ExecStart=/var/lib/kaylee/plugins/volumes/ebs -f ext4 %i
+ExecStop=/var/lib/kaylee/plugins/volumes/ebs -u %i
+[Install]
+WantedBy=multi-user.target
+```
+
+Then the units with volume driver `systemd-mountservice-ebs`:
+```
+- id: vol-a7039121
+  driver: systemd-mountservice-ebs
+  source: data
+  path: /usr/share/elasticsearch/data
+```
+Will have a systemd dependency on `ebs@vol-a7039121.service` that will be automatically started and stoped by `systemd`
+
+### script
+
+`// TODO`
 
 ## License
 MIT
