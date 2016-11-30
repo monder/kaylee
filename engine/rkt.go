@@ -25,6 +25,7 @@ func (*RktEngine) ValidateSpec(s *spec.Spec) error {
 func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string) *fleetSchema.Unit {
 	uuidFileName := regexp.MustCompile("[^a-zA-Z0-9_.-]").ReplaceAllLiteralString(name, "_")
 	uuidFileName = regexp.MustCompile("\\.service$").ReplaceAllLiteralString(uuidFileName, "")
+	uuidFile := "/var/run/kaylee_" + uuidFileName
 
 	var args []string
 
@@ -64,14 +65,19 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 			args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=%q", volumeIndex, volume.Source))
 			args = append(args, fmt.Sprintf("--mount volume=kaylee-volume-%d,target=%q", volumeIndex, volume.Path))
 		} else {
-			if strings.HasPrefix(volume.Driver, "kaylee-mount-") {
+			if strings.HasPrefix(volume.Driver, "systemd-mountservice-") {
+				mountServiceName := volume.Driver[len("systemd-mountservice-"):]
 				options = append(options, &fleetSchema.UnitOption{
-					// TODO BindsTo=?
-					Section: "Unit", Name: "Requires", Value: fmt.Sprintf("%s@%s.service", volume.Driver, volume.ID),
+					Section: "Unit",
+					Name:    "Wants",
+					Value:   fmt.Sprintf("%s@%s.service", mountServiceName, volume.ID),
 				})
 				options = append(options, &fleetSchema.UnitOption{
-					Section: "Unit", Name: "After", Value: fmt.Sprintf("%s@%s.service", volume.Driver, volume.ID),
+					Section: "Service",
+					Name:    "ExecStartPre",
+					Value:   fmt.Sprintf("/usr/bin/systemctl is-active %s@%s.service", mountServiceName, volume.ID),
 				})
+				args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=/mnt/%s/%s/%s", volumeIndex, mountServiceName, volume.ID, volume.Source))
 			} else {
 				options = append(options, &fleetSchema.UnitOption{
 					Section: "Service",
@@ -83,9 +89,9 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 					Name:    "ExecStopPost",
 					Value:   fmt.Sprintf("/var/lib/kaylee/plugins/volumes/%s -u %s", volume.Driver, volume.ID),
 				})
+				args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=/mnt/%s/%s/%s", volumeIndex, volume.Driver, volume.ID, volume.Source))
 			}
 
-			args = append(args, fmt.Sprintf("--volume kaylee-volume-%d,kind=host,source=/mnt/%s/%s/%s", volumeIndex, volume.Driver, volume.ID, volume.Source))
 			args = append(args, fmt.Sprintf("--mount volume=kaylee-volume-%d,target=%s", volumeIndex, volume.Path))
 		}
 	}
@@ -95,6 +101,7 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 	}
 	args = append(args, "--insecure-options=image,ondisk")
 	args = append(args, "--inherit-env")
+	args = append(args, fmt.Sprintf("--uuid-file-save=%s", uuidFile))
 
 	for _, arg := range spec.Args {
 		args = append(args, arg)
@@ -116,7 +123,13 @@ func (*RktEngine) GetFleetUnit(spec *spec.Spec, name string, conflicts []string)
 		Name:    "ExecStart",
 		Value:   fmt.Sprintf("/usr/bin/rkt run %s", strings.Join(args, " ")),
 	})
-
+	options = append(options, &fleetSchema.UnitOption{
+		Section: "Service", Name: "ExecStop", Value: fmt.Sprintf("-/usr/bin/rkt stop --uuid-file=%s", uuidFile),
+	})
+	options = append(options, &fleetSchema.UnitOption{
+		// Remove file to unlock volumes
+		Section: "Service", Name: "ExecStopPost", Value: fmt.Sprintf("-/usr/bin/rkt rm --uuid-file=%s", uuidFile),
+	})
 	options = append(options, &fleetSchema.UnitOption{
 		Section: "Service", Name: "ExecStopPost", Value: "/usr/bin/rkt gc",
 	})
